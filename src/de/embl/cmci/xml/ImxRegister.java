@@ -47,7 +47,9 @@ public class ImxRegister extends WindowAdapter implements ActionListener{
 
 		String[] rec = splitImxToString(imx);
 
+		// never used?
 		double refPos[][] = loadRefPos(rec, nTime);
+		
 		double spotsPos[][] = loadSpotsPos(rec, nTime);
 		double cenPos[][] = calcCenPos(spotsPos, nTime);
 
