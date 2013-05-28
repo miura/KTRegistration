@@ -22,11 +22,11 @@ import java.util.ArrayList;
 import java.util.Collections;
 
 public class ImxParser {
-	ArrayList timepoints;
-	ArrayList positions;
+	ArrayList<Integer> timepoints;
+	ArrayList<double[]> positions;
 	Integer mintime;
 	Integer maxtime;
-	private int frames;
+	int frames;
 	
 	public Document parseImx(String filepath){
 		Document doc = null;
@@ -47,14 +47,19 @@ public class ImxParser {
 	public void loadImaxInfo(String filepath){
 		//ImxParser ip = new ImxParser();
 		timepoints = new ArrayList<Integer>();
-		positions = new ArrayList<String>();
+		positions = new ArrayList<double[]>();
 		Document doc = this.parseImx(filepath);	
 		NodeList nList = doc.getElementsByTagName("spot");
 		for (int i = 0; i < nList.getLength(); i++) {
 			Node nNode = nList.item(i);
 			Element eElement = (Element) nNode;
 			timepoints.add(Integer.parseInt(eElement.getAttribute("time")));
-			positions.add(eElement.getAttribute("position"));
+			String[] pos = eElement.getAttribute("position").split(" ");
+			double[] elem = new double[4];
+			for (int j = 0; j < 3; j++)
+				elem[j] = Double.parseDouble(pos[j]);
+			elem[3] = Double.parseDouble(eElement.getAttribute("time"));
+			positions.add(elem);
 		}
 		Object maxT = Collections.max(timepoints);
 		Object minT = Collections.min(timepoints);
@@ -77,8 +82,9 @@ public class ImxParser {
 		ip.loadImaxInfo("/Volumes/D/Judith/data.imx");
 		ip.loadImaxInfo("/Volumes/D/Judith/780/780_3_TP_data.imx");
 		// problem with the file below: no closing tag for </bpImageField>
-		ip.loadImaxInfo("/Volumes/D/Judith/spim/SPIM_3_TP_data.imx");
-
+		//ip.loadImaxInfo("/Volumes/D/Judith/spim/SPIM_3_TP_data.imx");
+		ip.loadImaxInfo("/Volumes/D/Judith/spim1/data1.imx");
+		ip.loadImaxInfo("/Volumes/D/Judith/spim2/data2.imx");
 	}	
 	public void testParsing(Document doc){
 		NodeList nList = doc.getElementsByTagName("spot");	

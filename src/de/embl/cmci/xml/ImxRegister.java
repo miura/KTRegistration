@@ -54,9 +54,22 @@ public class ImxRegister extends WindowAdapter implements ActionListener{
 		// never used?
 		double refPos[][] = loadRefPos(rec, nTime);
 		
-		double spotsPos[][] = loadSpotsPos(rec, nTime);
+		//double spotsPos[][] = loadSpotsPos(rec, nTime);
+		double spotsPos[][] = convertSpotPos(ip);
+		for (int i = 0; i < spotsPos.length; i++){
+			for(int j=0;j<4;j++){
+				ta.append(Double.toString(spotsPos[i][j]) + " ");
+			}
+			ta.append("\n");
+		}
 		double cenPos[][] = calcCenPos(spotsPos, nTime);
-
+		ta.append("Spots Centroids\n");
+		for(int i=0;i<cenPos.length;i++){
+			for(int j=0;j<3;j++){
+				ta.append(Double.toString(cenPos[i][j]) + " ");
+			}
+			ta.append("\n");
+		}
 	//	cenPos = refPos;
 
 		double allSpotPos[][] = loadAllSpotPos(rec, nTime);
@@ -96,7 +109,9 @@ public class ImxRegister extends WindowAdapter implements ActionListener{
 
 			for(int i=0;i<cenPos.length;i++){
 				for(int j=0;j<3;j++){
-					pw2.print(cenPos[i][j]+" ");
+					//pw2.print(cenPos[i][j]+" ");
+					pw2.print(Double.toString(cenPos[i][j])+" ");
+
 				}
 			}
 			pw2.close();
@@ -218,6 +233,13 @@ public class ImxRegister extends WindowAdapter implements ActionListener{
 
 		return cenPos;
 
+	}
+	
+	static double[][] convertSpotPos (ImxParser ip){
+		double[][] pos = new double[ip.positions.size()][4];
+		for (int i = 0; i < pos.length; i++)
+			pos[i] = ip.positions.get(i);
+		return pos;
 	}
 
 	private static double[][] loadSpotsPos(String[] rec, int nTime) {
