@@ -43,7 +43,11 @@ public class ImxRegister extends WindowAdapter implements ActionListener{
 		String orif = fd.getFile();
 
 		String imx = loadImx(folder+orif);
-		int nTime = 31;
+		ImxParser ip = new ImxParser();
+		ip.loadImaxInfo(fd.getDirectory() + fd.getFile());
+		
+		//int nTime = 31;
+		int nTime = ip.frames;
 
 		String[] rec = splitImxToString(imx);
 
