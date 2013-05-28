@@ -1,3 +1,4 @@
+package de.embl.cmci.xml;
 
 
 
@@ -364,6 +365,11 @@ public class ImxRegister extends WindowAdapter implements ActionListener{
 
 	}
 
+	/** for loading imx file as string. 
+	 *  
+	 * @param filename
+	 * @return file contents as string. 
+	 */
 	private static String loadImx(String filename) {
 		String s = null;
 		try
