@@ -14,6 +14,7 @@ package de.embl.cmci.xml;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.DocumentBuilder;
 import org.w3c.dom.Document;
+import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.NodeList;
 import org.w3c.dom.Node;
 import org.w3c.dom.Element;
@@ -27,6 +28,10 @@ public class ImxParser {
 	Integer mintime;
 	Integer maxtime;
 	int frames;
+	boolean ref1found = false;
+	boolean ref2found = false;	
+	double[] ref1 = new double[3];
+	double[] ref2 = new double[3];	
 	
 	public Document parseImx(String filepath){
 		Document doc = null;
@@ -43,7 +48,7 @@ public class ImxParser {
 	    }
 		return doc;
 	}
-	
+	// initial run to retireve spot information. 
 	public void loadImaxInfo(String filepath){
 		//ImxParser ip = new ImxParser();
 		timepoints = new ArrayList<Integer>();
@@ -74,17 +79,96 @@ public class ImxParser {
 		
 	}
 	
+	/**
+	 * Collects track infromation for RegisterBack. 
+	 * @param filepath
+	 */
+	public void loadImaxTracks(String filepath, int RefFNumber){
+		Document doc = this.parseImx(filepath);	
+		NodeList nl = doc.getElementsByTagName("bpTrack");
+		NodeList nl2;
+		Element e, e2;
+		NamedNodeMap np = null;
+		String posstr;
+		String[] refstr;
+		String refFrameStr = Integer.toString(RefFNumber-1);
+		for (int i = 0; i < nl.getLength(); i++){
+			e = (Element) nl.item(i);
+			nl2 = e.getElementsByTagName("bpSurfaceComponent");
+			for (int j = 0; j < nl2.getLength(); j++){
+				e2 = (Element) nl2.item(j);
+				np = getReferenceAttributes("reference1", e2, refFrameStr);
+				if (np != null){
+					posstr = np.getNamedItem("position").getNodeValue();
+					System.out.println(posstr);
+					System.out.println(np.getNamedItem("time"));
+					ref1found = true;
+					refstr = posstr.split(" ");
+					for (int k = 0; k < 3; k++)
+						ref1[k] = Double.parseDouble(refstr[k]);
+
+				} 
+				np = getReferenceAttributes("reference2", e2, refFrameStr);
+				if (np != null){			
+					posstr = np.getNamedItem("position").getNodeValue();
+					System.out.println(posstr);
+					System.out.println(np.getNamedItem("time"));
+					ref2found = true;
+					refstr = posstr.split(" ");
+					for (int k = 0; k < 3; k++)
+						ref2[k] = Double.parseDouble(refstr[k]);					
+				}
+			}
+		}	
+	}
+		
+	NamedNodeMap getReferenceAttributes(String tagname, Element e2, String refFrameStr){
+		NodeList nl3, nl4;
+		Element e3, e4;
+		NamedNodeMap np = null;
+		NamedNodeMap retnp = null;
+		String thisname = getElementContent(e2, "name");
+		if (thisname.equals(tagname)){
+			System.out.println(thisname);
+			nl3 = e2.getElementsByTagName("bpSurfaceComponentSpot");
+			System.out.println("total Spots Number:" + Integer.toString(nl3.getLength()));
+			for (int k = 0; k < nl3.getLength(); k++){
+				e3 = (Element) nl3.item(k);
+				nl4 = e3.getElementsByTagName("spot");
+				Node n = nl4.item(0);
+				np = n.getAttributes();
+				if (np.getNamedItem("time").getNodeValue().equals(refFrameStr)){
+					retnp = np;
+				}
+			}
+		}
+		return retnp;
+	}
+	
+	
+	static String getElementContent(Element e, String TagName) {
+		NodeList nl = e.getElementsByTagName(TagName);
+		Node n = nl.item(0);
+		Node content = n.getFirstChild();
+		return content.getNodeValue();
+	}
+	
 	//for testing
 	public static void main(String argv[]) {
 		ImxParser ip = new ImxParser();
 		//Document doc = ip.parseImx("/Volumes/D/Judith/data.imx");
 		//ip.testParsing(doc);
-		ip.loadImaxInfo("/Volumes/D/Judith/data.imx");
-		ip.loadImaxInfo("/Volumes/D/Judith/780/780_3_TP_data.imx");
+		//ip.loadImaxInfo("/Volumes/D/Judith/data.imx");
+		//ip.loadImaxInfo("/Volumes/D/Judith/780/780_3_TP_data.imx");
+		
 		// problem with the file below: no closing tag for </bpImageField>
 		//ip.loadImaxInfo("/Volumes/D/Judith/spim/SPIM_3_TP_data.imx");
-		ip.loadImaxInfo("/Volumes/D/Judith/spim1/data1.imx");
-		ip.loadImaxInfo("/Volumes/D/Judith/spim2/data2.imx");
+
+		//ip.loadImaxInfo("/Volumes/D/Judith/spim1/data1.imx");
+		//ip.loadImaxInfo("/Volumes/D/Judith/spim2/data2.imx");
+		
+		//ip.loadImaxTracks("/Volumes/D/Judith/tracks.imx", 1);
+		ip.loadImaxTracks("/Volumes/D/Judith/tracks.imx", 1);
 	}	
 	public void testParsing(Document doc){
 		NodeList nList = doc.getElementsByTagName("spot");	
