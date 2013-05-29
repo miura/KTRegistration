@@ -3,6 +3,9 @@
   <groupId>de.embl.cmci</groupId>
   <artifactId>ImxRegister</artifactId>
   <version>0.0.1-SNAPSHOT</version>
+  <properties>
+  	<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+  </properties>  
   <build>
     <sourceDirectory>src</sourceDirectory>
     <plugins>
@@ -22,9 +25,9 @@
             <mainClass>de.embl.cmci.xml.ImxRegister</mainClass>
           </manifest>
         </archive>
-<!--          <descriptorRefs>
+        <descriptorRefs>
           <descriptorRef>jar-with-dependencies</descriptorRef>
-        </descriptorRefs> -->
+        </descriptorRefs> 
       </configuration>
   <executions>
     <execution>

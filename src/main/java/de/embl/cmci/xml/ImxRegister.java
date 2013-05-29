@@ -15,6 +15,9 @@ public class ImxRegister extends WindowAdapter implements ActionListener{
 	Frame frm = new Frame("ImxRegister");
 	TextArea ta;
 	
+	//gui
+	Button loadDataImxButton;
+	
 	public static void main(String args[]) {
 		ImxRegister win = new ImxRegister();
 	}
@@ -23,8 +26,9 @@ public class ImxRegister extends WindowAdapter implements ActionListener{
 		frm.setSize(200 , 600);
 		frm.setLayout(new BorderLayout());
 
-		Button load = (Button)frm.add("North", new Button("LOAD"));
-		load.addActionListener(this);
+		loadDataImxButton = new Button("LOAD");
+		frm.add("North", loadDataImxButton);
+		loadDataImxButton.addActionListener(this);
 
 		ta = (TextArea)frm.add("Center", new TextArea());
 		ta.setSize(200 , 550);
@@ -34,6 +38,13 @@ public class ImxRegister extends WindowAdapter implements ActionListener{
 	}
 	
 	public void actionPerformed(ActionEvent e) {
+		if (e.getSource() == loadDataImxButton){
+			registerMain();
+		}
+
+	}
+	
+	public void registerMain(){
 		FileDialog fd = new FileDialog(frm , "Select the imx File" , FileDialog.LOAD);
 		fd.setVisible(true);
 
@@ -78,8 +89,7 @@ public class ImxRegister extends WindowAdapter implements ActionListener{
 		outputCenPos(cenPos, folder, orif);
 		outputRegisteredImx(registeredRec, folder, orif);
 
-		ta.append("Done.");
-
+		ta.append("Done.");	
 	}
 
 	public void windowClosing(WindowEvent e) {

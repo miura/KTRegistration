@@ -1,4 +1,4 @@
-package de.embl.cmci.xml
+package de.embl.cmci.xml;
 
 
 import java.awt.*;
@@ -15,10 +15,14 @@ public class ImxRegisterBack extends WindowAdapter implements ActionListener{
 	TextArea ta;
 	Choice ch1;
 	
+	//gui
+	Button loadRegisterBack;
+	
 	public static void main(String args[]) {
 		ImxRegisterBack win = new ImxRegisterBack();
 	}
 	
+	//GUI
 	public ImxRegisterBack() {
 		frm.setSize(200 , 600);
 		frm.setLayout(new FlowLayout());
@@ -36,8 +40,9 @@ public class ImxRegisterBack extends WindowAdapter implements ActionListener{
 		}
 		frm.add(ch1);
 		
-		Button load = (Button)frm.add(new Button("Load imx file"));
-		load.addActionListener(this);
+		loadRegisterBack = new Button("Load imx file");
+		frm.add(loadRegisterBack);
+		loadRegisterBack.addActionListener(this);
 
 		ta = (TextArea)frm.add("Center", new TextArea());
 		ta.setSize(200 , 550);
@@ -47,6 +52,13 @@ public class ImxRegisterBack extends WindowAdapter implements ActionListener{
 	}
 	
 	public void actionPerformed(ActionEvent e) {
+		if (e.getSource() == loadRegisterBack){
+			registerBackMain();
+		}
+
+	}
+	
+	public void registerBackMain(){
 		FileDialog fd = new FileDialog(frm , "Select the imx File" , FileDialog.LOAD);
 		fd.setVisible(true);
 
@@ -54,12 +66,16 @@ public class ImxRegisterBack extends WindowAdapter implements ActionListener{
 
 		String folder = fd.getDirectory();
 		String orif = fd.getFile();
-
-		String refTimepoint = "" + 1+(Integer.parseInt(ch1.getSelectedItem()));
 		
+		ImxParser ip = new ImxParser();
+		ip.loadImaxInfo(folder + orif);
+		//int nTime = 31;
+		int nTime = ip.frames;
+		
+		String refTimepoint = "" + 1+(Integer.parseInt(ch1.getSelectedItem()));
 		String cenPosF = "cenPos-data.imx.csv";
-		int nTime = 31;
-
+		
+		// this probably should be fixed?
 		String imx = loadImx(folder + orif);
 		String cenPosStr = loadImx(folder + cenPosF);
 
@@ -87,7 +103,6 @@ public class ImxRegisterBack extends WindowAdapter implements ActionListener{
 		outputRegisteredImx(sortedRegisteredBackRec, folder, orif);
 
 		ta.append("Done.");
-
 	}
 
 	public void windowClosing(WindowEvent e) {
