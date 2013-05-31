@@ -66,7 +66,7 @@ public class ImxRegister extends WindowAdapter implements ActionListener{
 		double refPos[][] = loadRefPos(rec, nTime);
 		
 		//double spotsPos[][] = loadSpotsPos(rec, nTime);
-		double spotsPos[][] = convertSpotPos(ip);
+		double spotsPos[][] = ip.convertSpotPos();
 		for (int i = 0; i < spotsPos.length; i++){
 			for(int j=0;j<4;j++){
 				ta.append(Double.toString(spotsPos[i][j]) + " ");
@@ -243,13 +243,6 @@ public class ImxRegister extends WindowAdapter implements ActionListener{
 
 		return cenPos;
 
-	}
-	
-	static double[][] convertSpotPos (ImxParser ip){
-		double[][] pos = new double[ip.positions.size()][4];
-		for (int i = 0; i < pos.length; i++)
-			pos[i] = ip.positions.get(i);
-		return pos;
 	}
 
 	private static double[][] loadSpotsPos(String[] rec, int nTime) {

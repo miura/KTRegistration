@@ -189,5 +189,11 @@ public class ImxParser {
 			}
 		}		
 	}
+	double[][] convertSpotPos (){
+		double[][] pos = new double[this.positions.size()][4];
+		for (int i = 0; i < pos.length; i++)
+			pos[i] = this.positions.get(i);
+		return pos;
+	}
 	
 }

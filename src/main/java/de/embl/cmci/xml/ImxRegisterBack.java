@@ -66,25 +66,30 @@ public class ImxRegisterBack extends WindowAdapter implements ActionListener{
 
 		String folder = fd.getDirectory();
 		String orif = fd.getFile();
+	
+		int reftime = 1+(Integer.parseInt(ch1.getSelectedItem()));
+		String refTimepoint = Integer.toString(reftime) ;
 		
 		ImxParser ip = new ImxParser();
 		ip.loadImaxInfo(folder + orif);
 		//int nTime = 31;
 		int nTime = ip.frames;
 		
-		String refTimepoint = "" + 1+(Integer.parseInt(ch1.getSelectedItem()));
+		ip.loadImaxTracks(folder + orif, reftime);
+		
+		
 		String cenPosF = "cenPos-data.imx.csv";
 		
-		// this probably should be fixed?
-		String imx = loadImx(folder + orif);
 		String cenPosStr = loadImx(folder + cenPosF);
-
-		String[] rec = splitImxToString(imx);
 		String[] cenPosRec = splitImxToString(cenPosStr);
-
 		double cenPos[][] = loadPos(cenPosRec, nTime);
 
+		// this probably should be fixed?
+		String imx = loadImx(folder + orif);		
+		String[] rec = splitImxToString(imx);		
 		double allSpotPos[][] = loadAllSpotPos(rec, nTime);
+		for (int i = 0; i < allSpotPos.length; i++)
+			System.out.println(allSpotPos[i][0]);
 
 		double registerBackPos[][] = registerBackPos(allSpotPos, cenPos);
 
@@ -92,8 +97,9 @@ public class ImxRegisterBack extends WindowAdapter implements ActionListener{
 
 		double[][] spotPosAtFirst = loadSpotPosAtFrist(allSpotPos, refTimepoint);
 
-		double[] axis = getReferenceAxis(rec, refTimepoint);
-
+		//double[] axis = getReferenceAxis(rec, refTimepoint);
+		double[] axis = calculateRefAxis(ip.ref1, ip.ref2);
+		
 		int[] trackNumber = getTrackNumber(spotPosAtFirst, axis);
 
 		String[] sortedRegisteredBackRec = giveTrackNumber(trackNumber, registeredBackRec, refTimepoint);
@@ -170,7 +176,6 @@ public class ImxRegisterBack extends WindowAdapter implements ActionListener{
 
 	private static double[] getReferenceAxis(String[] rec, String refTimepoint) {
 
-		double[] axis = new double[3];
 		double[] ref1 = new double[3];
 		double[] ref2 = new double[3];
 
@@ -200,15 +205,20 @@ public class ImxRegisterBack extends WindowAdapter implements ActionListener{
 
 		}
 
+//		for(int j=0; j<3; j++){
+//			axis[j] = (ref1[j]-ref2[j])/Math.sqrt((ref1[0]-ref2[0])*(ref1[0]-ref2[0])+(ref1[1]-ref2[1])*(ref1[1]-ref2[1])+(ref1[2]-ref2[2])*(ref1[2]-ref2[2]));
+//		}
+		//return axis;
+		return calculateRefAxis(ref1, ref2);
+	}
+	
+	static double[] calculateRefAxis(double[] ref1, double[] ref2){
+		double[] axis = new double[3];
 		for(int j=0; j<3; j++){
 			axis[j] = (ref1[j]-ref2[j])/Math.sqrt((ref1[0]-ref2[0])*(ref1[0]-ref2[0])+(ref1[1]-ref2[1])*(ref1[1]-ref2[1])+(ref1[2]-ref2[2])*(ref1[2]-ref2[2]));
 		}
-
-
-		return axis;
+		return axis;		
 	}
-
-
 
 	private static String[] giveTrackNumber(int[] trackNumber,
 			String[] rec, String refTimepoint) {
@@ -413,7 +423,7 @@ public class ImxRegisterBack extends WindowAdapter implements ActionListener{
 	}
 
 	private static String[] splitImxToString(String s) {
-		System.out.println(s);
+		//System.out.println(s);
 		String[] strrec = s.split(" ");
 
 		return strrec;
