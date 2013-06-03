@@ -10,9 +10,16 @@ import java.io.FileInputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
+import javax.swing.BoxLayout;
+import javax.swing.JPanel;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JSeparator;
+import javax.swing.SwingConstants;
+import javax.swing.border.EtchedBorder;
 
 public class ImxRegister extends WindowAdapter implements ActionListener{
-	Frame frm = new Frame("ImxRegister");
+	JFrame frm = new JFrame("ImxRegister");
 	TextArea ta, ta2;
   Choice ch1;	
 	//gui
@@ -24,29 +31,53 @@ public class ImxRegister extends WindowAdapter implements ActionListener{
 	}
 	
 	public ImxRegister() {
+    frm.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frm.setSize(200 , 600);
-		frm.setLayout(new GridLayout(6, 1));
+		//frm.setLayout(new GridLayout(6, 1));
+		frm.setLayout(new BoxLayout(frm.getContentPane(), BoxLayout.Y_AXIS));
+    
+    //first step, registration of the original
+    JPanel panelstep1 = new JPanel();
+    panelstep1.setLayout(new BoxLayout(panelstep1, BoxLayout.Y_AXIS));
+    panelstep1.setBorder(new EtchedBorder(EtchedBorder.LOWERED));
 
+    Label lb1 = new Label();
+		lb1.setText("Step1: Registration");
+		//frm.add(lb1);
+		panelstep1.add(lb1);
     //1
 		loadDataImxButton = new Button("Load Original Imx");
-		frm.add("North", loadDataImxButton);
+		//frm.add("North", loadDataImxButton);
+		//frm.add(loadDataImxButton);
+		panelstep1.add(loadDataImxButton);
 		loadDataImxButton.addActionListener(this);
-    
+    frm.add(panelstep1);    
     //2
-		ta = (TextArea)frm.add("Center", new TextArea());
+		//ta = (TextArea)frm.add("Center", new TextArea());
+		ta = (TextArea)frm.add(new TextArea());
 		ta.setSize(200 , 550);
 
     // second step, originally in the Register back
-    // 3
+    //
+    JPanel panelstep2 = new JPanel();
+    panelstep2.setLayout(new BoxLayout(panelstep2, BoxLayout.Y_AXIS));
+    panelstep2.setBorder(new EtchedBorder(EtchedBorder.LOWERED));
+    
+    frm.add(new JSeparator(SwingConstants.HORIZONTAL));
+    Label lb2 = new Label();
+		lb2.setText("Step2: Inverse Registration");
+		panelstep2.add(lb2);
+
     Label lb = new Label();
 		lb.setText("Representative interKT axis");
-		frm.add(lb);
+		panelstep2.add(lb);
     Panel p1 = new Panel();
-    p1.setLayout(new GridLayout(1, 2));
+    p1.setLayout(new BoxLayout(p1, BoxLayout.X_AXIS));
 		// 4
-		Label lb1 = new Label("Time:");
+		JLabel lb4 = new JLabel("Time:", JLabel.CENTER);
+    lb4.setVerticalAlignment(JLabel.CENTER);
 		//frm.add(lb1);
-    p1.add(lb1);
+    p1.add(lb4);
 		// 5
 		ch1 = new Choice();
 		for(int i=0; i<31; i++){
@@ -54,16 +85,17 @@ public class ImxRegister extends WindowAdapter implements ActionListener{
 		}
 		//frm.add(ch1);
 		p1.add(ch1);
-    frm.add(p1);
+    panelstep2.add(p1);
     //6
-		loadRegisterBack = new Button("Load imx file");
-		frm.add(loadRegisterBack);
+		loadRegisterBack = new Button("Load Registered & \n annotated Imx file");
+		panelstep2.add(loadRegisterBack);
 		loadRegisterBack.addActionListener(this);
 
     //7
-		ta2 = (TextArea)frm.add("Center", new TextArea());
+    ta2 = new TextArea();
+		panelstep2.add("Center", ta2);
 		ta2.setSize(200 , 550);
-
+    frm.add(panelstep2);
 
 		frm.setVisible(true);
 		frm.addWindowListener(this);
@@ -72,6 +104,10 @@ public class ImxRegister extends WindowAdapter implements ActionListener{
 	public void actionPerformed(ActionEvent e) {
 		if (e.getSource() == loadDataImxButton){
 			registerMain();
+		}
+    if (e.getSource() == loadRegisterBack){
+  		ImxRegisterBack regback = new ImxRegisterBack(ImxRegisterBack.NO_GUI);    
+			regback.registerBackMain(ta2, ch1);
 		}
 
 	}

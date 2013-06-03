@@ -14,42 +14,45 @@ public class ImxRegisterBack extends WindowAdapter implements ActionListener{
 	Frame frm = new Frame("ImxRegisterBack");
 	TextArea ta;
 	Choice ch1;
-	
+  public static final boolean NO_GUI = false;
+  public static final boolean WITH_GUI = true;
 	//gui
 	Button loadRegisterBack;
 	
 	public static void main(String args[]) {
-		ImxRegisterBack win = new ImxRegisterBack();
+		ImxRegisterBack win = new ImxRegisterBack(WITH_GUI);
 	}
 	
 	//GUI
-	public ImxRegisterBack() {
-		frm.setSize(200 , 600);
-		frm.setLayout(new FlowLayout());
-		
-		Label lb = new Label();
-		lb.setText("Representative interKT axis");
-		frm.add(lb);
-		
-		Label lb1 = new Label("Time:");
-		frm.add(lb1);
-		
-		ch1 = new Choice();
-		for(int i=0; i<31; i++){
-			ch1.add(""+(i+1));
-		}
-		frm.add(ch1);
-		
-		loadRegisterBack = new Button("Load imx file");
-		frm.add(loadRegisterBack);
-		loadRegisterBack.addActionListener(this);
+  public ImxRegisterBack(boolean GUI) {
+    if (GUI) {
+      frm.setSize(200 , 600);
+      frm.setLayout(new FlowLayout());
 
-		ta = (TextArea)frm.add("Center", new TextArea());
-		ta.setSize(200 , 550);
+      Label lb = new Label();
+      lb.setText("Representative interKT axis");
+      frm.add(lb);
 
-		frm.setVisible(true);
-		frm.addWindowListener(this);
-	}
+      Label lb1 = new Label("Time:");
+      frm.add(lb1);
+
+      ch1 = new Choice();
+      for(int i=0; i<31; i++){
+        ch1.add(""+(i+1));
+      }
+      frm.add(ch1);
+
+      loadRegisterBack = new Button("Load imx file");
+      frm.add(loadRegisterBack);
+      loadRegisterBack.addActionListener(this);
+
+      ta = (TextArea)frm.add("Center", new TextArea());
+      ta.setSize(200 , 550);
+
+      frm.setVisible(true);
+      frm.addWindowListener(this);
+    }
+  }
 	
 	public void actionPerformed(ActionEvent e) {
 		if (e.getSource() == loadRegisterBack){
@@ -57,7 +60,12 @@ public class ImxRegisterBack extends WindowAdapter implements ActionListener{
 		}
 
 	}
-	
+
+  public void registerBackMain(TextArea ta, Choice ch1){
+      this.ta = ta;
+      this.ch1 = ch1;
+      registerBackMain();
+  }
 	public void registerBackMain(){
 		FileDialog fd = new FileDialog(frm , "Select the imx File" , FileDialog.LOAD);
 		fd.setVisible(true);
