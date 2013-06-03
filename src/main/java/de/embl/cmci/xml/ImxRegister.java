@@ -13,10 +13,11 @@ import java.io.PrintWriter;
 
 public class ImxRegister extends WindowAdapter implements ActionListener{
 	Frame frm = new Frame("ImxRegister");
-	TextArea ta;
-	
+	TextArea ta, ta2;
+  Choice ch1;	
 	//gui
 	Button loadDataImxButton;
+	Button loadRegisterBack;
 	
 	public static void main(String args[]) {
 		ImxRegister win = new ImxRegister();
@@ -24,14 +25,45 @@ public class ImxRegister extends WindowAdapter implements ActionListener{
 	
 	public ImxRegister() {
 		frm.setSize(200 , 600);
-		frm.setLayout(new BorderLayout());
+		frm.setLayout(new GridLayout(6, 1));
 
-		loadDataImxButton = new Button("LOAD");
+    //1
+		loadDataImxButton = new Button("Load Original Imx");
 		frm.add("North", loadDataImxButton);
 		loadDataImxButton.addActionListener(this);
-
+    
+    //2
 		ta = (TextArea)frm.add("Center", new TextArea());
 		ta.setSize(200 , 550);
+
+    // second step, originally in the Register back
+    // 3
+    Label lb = new Label();
+		lb.setText("Representative interKT axis");
+		frm.add(lb);
+    Panel p1 = new Panel();
+    p1.setLayout(new GridLayout(1, 2));
+		// 4
+		Label lb1 = new Label("Time:");
+		//frm.add(lb1);
+    p1.add(lb1);
+		// 5
+		ch1 = new Choice();
+		for(int i=0; i<31; i++){
+			ch1.add(""+(i+1));
+		}
+		//frm.add(ch1);
+		p1.add(ch1);
+    frm.add(p1);
+    //6
+		loadRegisterBack = new Button("Load imx file");
+		frm.add(loadRegisterBack);
+		loadRegisterBack.addActionListener(this);
+
+    //7
+		ta2 = (TextArea)frm.add("Center", new TextArea());
+		ta2.setSize(200 , 550);
+
 
 		frm.setVisible(true);
 		frm.addWindowListener(this);
