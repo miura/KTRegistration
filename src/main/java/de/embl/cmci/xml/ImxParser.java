@@ -80,20 +80,22 @@ public class ImxParser {
 	}
 	
 	/**
-	 * Collects track infromation for RegisterBack. 
+	 * Collects track information for RegisterBack.
+	 * Input file should be the Imx file after registration, tracking and 
+	 * manual annotation in Imaris 
 	 * @param filepath
 	 */
-	public void loadImaxTracks(String filepath, int RefFNumber){
+	public boolean loadImaxTracks(String filepath, int RefFNumber){
 		Document doc = this.parseImx(filepath);	
-		NodeList nl = doc.getElementsByTagName("bpTrack");
+		NodeList nodebpTrack = doc.getElementsByTagName("bpTrack");
 		NodeList nl2;
 		Element e, e2;
 		NamedNodeMap np = null;
 		String posstr;
 		String[] refstr;
 		String refFrameStr = Integer.toString(RefFNumber-1);
-		for (int i = 0; i < nl.getLength(); i++){
-			e = (Element) nl.item(i);
+		for (int i = 0; i < nodebpTrack.getLength(); i++){
+			e = (Element) nodebpTrack.item(i);
 			nl2 = e.getElementsByTagName("bpSurfaceComponent");
 			for (int j = 0; j < nl2.getLength(); j++){
 				e2 = (Element) nl2.item(j);
@@ -119,7 +121,12 @@ public class ImxParser {
 						ref2[k] = Double.parseDouble(refstr[k]);					
 				}
 			}
-		}	
+		}
+		if (ref1found && ref2found){
+			return true;
+		} else
+			return false;
+		
 	}
 		
 	NamedNodeMap getReferenceAttributes(String tagname, Element e2, String refFrameStr){
