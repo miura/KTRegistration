@@ -6,3 +6,5 @@
 *.DS_Store
 
 tags
+.pydevproject
+src/test/*
