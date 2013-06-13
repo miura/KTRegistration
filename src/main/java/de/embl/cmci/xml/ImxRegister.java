@@ -123,19 +123,16 @@ public class ImxRegister extends WindowAdapter implements ActionListener{
 	public void registerMain(String folder, String orif){
 		
 		String fullpath = folder + orif;
-		if (ta != null)
-			ta.setText(fullpath);
-		else
-			System.out.println(fullpath);
+		ouputInfo(fullpath);
 		
-		String imx = loadImx(folder+orif);
+		//String imx = loadImx(folder+orif);
 		ImxParser ip = new ImxParser();
 		ip.loadImaxInfo(fullpath);
 		
 		//int nTime = 31;
 		int nTime = ip.frames;
 
-		String[] rec = splitImxToString(imx);
+		//String[] rec = splitImxToString(imx);
 
 		// never used?
 		// out, on 20130613 double refPos[][] = loadRefPos(rec, nTime);
@@ -144,31 +141,21 @@ public class ImxRegister extends WindowAdapter implements ActionListener{
 		//double spotsPos[][] = loadSpotsPos(rec, nTime);
 		double spotsPos[][] = ip.convertSpotPos();
 		
-		String spotsinfo = "";
-		for (int i = 0; i < spotsPos.length; i++){
-			for(int j=0;j<4;j++){
-				spotsinfo.concat(Double.toString(spotsPos[i][j]) + " ");
-			}
-			spotsinfo.concat("\n");
-		}
-		if ( ta != null)
-			ta.append(spotsinfo);
-		else
-			System.out.println(spotsinfo);
+		String spotsinfo = "\n === Spots Info === \n";
+		String placeholder = "t=%d: %-10.8f %-10.8f %-10.8f%n";
+		for (int i = 0; i < spotsPos.length; i++)
+			spotsinfo += String.format(placeholder, 
+					(int) spotsPos[i][3], spotsPos[i][0], spotsPos[i][1], spotsPos[i][2]); 
+		ouputInfo(spotsinfo);
+
 		
 		//------ centroid --------
 		double cenPos[][] = calcCenPos(spotsPos, nTime);
-		String centroidinfo = "Spots Centroids\n";	
-		for(int i=0;i<cenPos.length;i++){
-			for(int j=0;j<3;j++){
-				centroidinfo.concat(Double.toString(cenPos[i][j]) + " ");
-			}
-			centroidinfo.concat("\n");
-		}
-		if ( ta != null)
-			ta.append(centroidinfo);
-		else
-			System.out.println(centroidinfo);
+		String centroidinfo = "\n\n=== Spot Centroids ===\n";	
+		placeholder = "t=%d: %-10.8f %-10.8f %-10.8f%n";
+		for(int i=0;i<cenPos.length;i++)
+			centroidinfo += String.format(placeholder, i, cenPos[i][0], cenPos[i][1], cenPos[i][2]);
+		ouputInfo(centroidinfo);
 
 		//	cenPos = refPos;
 
@@ -183,10 +170,15 @@ public class ImxRegister extends WindowAdapter implements ActionListener{
 		String newfilepath = folder + "registered-"+ orif;
 		ip.writeUpdatedImx(newfilepath);
 		
+		ouputInfo("\nRegisterd File: " + newfilepath + "\n");
+		ouputInfo("Done.");
+	}
+	
+	void ouputInfo(String info){
 		if ( ta != null)
-			ta.append("Done.");
+			ta.append(info);
 		else
-			System.out.println("Done.");
+			System.out.println(info);		
 	}
 
 	public void windowClosing(WindowEvent e) {
@@ -299,7 +291,7 @@ public class ImxRegister extends WindowAdapter implements ActionListener{
 		for(t=0;t<nTime;t++){
 			n=0;
 			j=0;
-			System.out.println(pos.length);
+			//System.out.println(pos.length);
 			for(i=0;i<pos.length;i++){
 
 				if((int)pos[i][3] == t){

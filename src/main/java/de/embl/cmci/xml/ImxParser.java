@@ -13,6 +13,7 @@ package de.embl.cmci.xml;
  */
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.DocumentBuilder;
+import javax.xml.transform.OutputKeys;
 import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerException;
 import javax.xml.transform.TransformerFactory;
@@ -258,10 +259,9 @@ public class ImxParser {
 			System.out.println("Given double[][] has different lenght as spotlistReg");
 			return false;
 		}
+		String placeholder = "%-10.8f %-10.8f %-10.8f";
 		for (int i = 0; i < pos.length; i++){
-			String posstring = Double.toString(pos[i][0]) +
-					" " + Double.toString(pos[i][1]) + 
-					" " + Double.toString(pos[i][2]) ;
+			String posstring = String.format(placeholder, pos[i][0], pos[i][1], pos[i][2]);
 			Node spot = spotlist.item(i);
 			NamedNodeMap attrs = spot.getAttributes();
 			Node attpos = attrs.getNamedItem("position");
@@ -482,10 +482,11 @@ public class ImxParser {
 			// write the content into xml file
 			TransformerFactory transformerFactory = TransformerFactory.newInstance();
 			Transformer transformer = transformerFactory.newTransformer();
+			transformer.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
 			DOMSource source = new DOMSource(doc);
 			StreamResult result = new StreamResult(new File(filepath));
 			transformer.transform(source, result);
-			System.out.println("Done");
+			System.out.println("File Written: " + filepath);
 		} catch (TransformerException tfe) {
 			tfe.printStackTrace();
 		}
