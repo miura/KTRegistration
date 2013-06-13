@@ -33,6 +33,7 @@ import java.util.Collections;
 public class ImxParser {
 	ArrayList<Integer> timepoints;
 	ArrayList<double[]> positions;
+	ArrayList<double[]> bpTrackPositions;
 	Integer mintime;
 	Integer maxtime;
 	int frames;
@@ -87,8 +88,9 @@ public class ImxParser {
 	 * true if the loaded file seems to be already tracked file (the second step)
 	 */
 	public boolean isTrackedFile;
-	private String rootpath;
+	public String rootpath;
 	
+	public double[][] centroids;
 	
 	/** Document Loader
 	 *  see http://www.mkyong.com/java/how-to-read-xml-file-in-java-dom-parser/
@@ -146,7 +148,7 @@ public class ImxParser {
 	public void loadImaxInfo(String filepath){
 		//ImxParser ip = new ImxParser();
 		timepoints = new ArrayList<Integer>();
-		positions = new ArrayList<double[]>();
+		//positions = new ArrayList<double[]>();
 		Document docorg = this.parseImx(filepath);
 		Document doc = (Document) docorg.cloneNode(true);
 		this.doc = doc;
@@ -183,18 +185,20 @@ public class ImxParser {
 		//step1
 		if (isSpotfile){
 			this.spotlist = spots;
-			this.spotlistOrg = nodeList2ArrayList(spots);
+			this.spotlistOrg = nodeList2ArrayList(spots); //to keep
 			
 		//step2	
 		} else if (isTrackedFile) {
 			this.spotlist = spots;
 			this.tspotlist = trackspots;
-			this.spotlistReg = nodeList2ArrayList(spots);
-			this.spotlistTracks = nodeList2ArrayList(trackspots);
+			this.spotlistReg = nodeList2ArrayList(spots); //to keep
+			this.spotlistTracks = nodeList2ArrayList(trackspots); // to keep
 			this.trackList = tracklist;
 		}
 		
 		parseSpotsList(spots);
+		if (isTrackedFile)
+			parseTrackSpotsList(trackspots);
 		
 	}
 	ArrayList<Node> nodeList2ArrayList(NodeList src){
@@ -238,6 +242,10 @@ public class ImxParser {
 		}
 		return positions;
 	}
+	
+	void parseTrackSpotsList(NodeList trackspots){
+		this.bpTrackPositions = spotNodeList2ArrayList(trackspots);	
+	}
 
 	double[][] convertSpotPos (){
 		// index = 4 in the original ImxRegister is index within string array (rec)
@@ -247,6 +255,16 @@ public class ImxParser {
 			pos[i] = this.positions.get(i);
 		return pos;
 	}
+
+	double[][] convertTrackSpotPos (){
+		// index = 4 in the original ImxRegister is index within string array (rec)
+		// but for here, a dummy (will be 0 for all)
+		double[][] pos = new double[this.bpTrackPositions.size()][5];
+		for (int i = 0; i < pos.length; i++)
+			pos[i] = this.positions.get(i);
+		return pos;
+	}
+	
 	/**
 	 * Using the double[][] (Tomo's format of positions) passed to the argument, 
 	 * updates the doc content, <spots><spot> lines.  

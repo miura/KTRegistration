@@ -4,6 +4,7 @@ import java.awt.*;
 import java.awt.event.*;
 import java.io.BufferedWriter;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -18,10 +19,11 @@ import javax.swing.border.EtchedBorder;
 public class ImxRegister extends WindowAdapter implements ActionListener{
 	JFrame frm = new JFrame("ImxRegister");
 	TextArea ta, ta2;
-  Choice ch1;	
+	Choice ch1;	
 	//gui
 	Button loadDataImxButton;
 	Button loadRegisterBack;
+	ImxParser ip; 
 	
 	public static void main(String args[]) {
 		ImxRegister win = new ImxRegister();
@@ -146,7 +148,7 @@ public class ImxRegister extends WindowAdapter implements ActionListener{
 		for(int i=0;i<cenPos.length;i++)
 			centroidinfo += String.format(placeholder, i, cenPos[i][0], cenPos[i][1], cenPos[i][2]);
 		ouputInfo(centroidinfo);
-
+		ip.centroids = cenPos;
 
 		double registeredPos[][] = registerPos(spotsPos, cenPos);
 		
@@ -154,9 +156,13 @@ public class ImxRegister extends WindowAdapter implements ActionListener{
 
 		// === writing files ===
 		outputCenPos(cenPos, folder, orif);
-
+		
 		String newfilepath = folder + "registered-"+ orif;
 		ip.writeUpdatedImx(newfilepath);
+		
+		// === keep things in the active memory ====
+		ip.rootpath = folder;
+		this.ip = ip;		
 		
 		ouputInfo("\nRegisterd File: " + newfilepath + "\n");
 		ouputInfo("Done.");
@@ -287,7 +293,114 @@ public class ImxRegister extends WindowAdapter implements ActionListener{
 
 	}
 
+	/**
+	 * moved from ImxRegisterBack
+	 * 
+	 * @author Tomo
+	 * @author Kota
+	 * @param folder
+	 * @param orif
+	 * @param reftime
+	 */
+	public void registerBackMain(String folder, String orif, int reftime){
+		
+		boolean isNewImaxParser = false;
+		//prints out the selected directory.
+		ouputInfo2(folder + orif + "\n");
 
+		//retrieve user-selected timepoint. 
+		
+		String refTimepoint = Integer.toString(reftime) ;
+		ImxParser ip;
+		if ((this.ip == null) || (this.ip.rootpath != folder)) {
+			ip = new ImxParser();
+			isNewImaxParser = true;
+		} else {
+			ip = this.ip;	
+		}
+		
+		ip.loadImaxInfo(folder + orif);
+		//int nTime = 31;
+		int nTime = ip.frames;
+		ouputInfo2("Time Points:"+Integer.toString(nTime) + "\n");
+		
+		double cenPos[][];		
+		if (isNewImaxParser){
+			//this file name seems to be pretty static. 
+			//the file containing centroid positions. 
+			String cenPosF = "cenPos-data.imx.csv";
+
+			// this loads the centroid position file. 
+			String cenPosStr = loadImx(folder + cenPosF);
+
+			//splits Imx content by spaces. 
+			String[] cenPosRec = splitImxToString(cenPosStr);
+
+			//loads the position file	
+			cenPos = loadPos(cenPosRec, nTime);
+			ouputInfo2("Root folder changed: Centroid file loded, Imx Parser created." + "\n");
+		} else {
+			cenPos = ip.centroids;
+		}
+		// ------ spots <spot>
+		double spotsPos[][] = ip.convertSpotPos();
+		//cancels back registration for <spots><spot>
+		double registerBackPos[][] = registerBackPos(spotsPos, cenPos);
+
+		//------ <bpTrack><spots>
+		double trackspotsPos[][] = ip.convertTrackSpotPos();
+		double registerBackTrackPos[][] = registerBackPos(trackspotsPos, cenPos);
+		// prepare string array that corresponds to the Imx content. 
+//		String[] registeredBackRec = replaceIntoRegistered(rec, registerBackPos);
+		
+		ip.loadImaxTracks(folder + orif, reftime);
+		
+		// this probably should be fixed?
+		// loading registered, tracked then reference annotated file. 
+//		String imx = loadImx(folder + orif);		
+//		String[] rec = splitImxToString(imx);		
+		// collect all spot positions in 2D array. 
+//		double allSpotPos[][] = loadAllSpotPos(rec, nTime);
+		
+		
+//		for (int i = 0; i < allSpotPos.length; i++)
+//			System.out.println(allSpotPos[i][0]);
+
+
+		// returns spots in tracks at reference timepoint
+		double[][] spotPosAtFirst = loadSpotPosAtFrist(allSpotPos, refTimepoint);
+
+		//double[] axis = getReferenceAxis(rec, refTimepoint);
+		// a vector between selected pair (annotated).
+		double[] axis = calculateRefAxis(ip.ref1, ip.ref2);
+
+		// find a partner with the minimum cross product
+		//	rename tracks according to pairing. 
+		int[] trackNumber = getTrackNumber(spotPosAtFirst, axis);
+
+
+		String[] sortedRegisteredBackRec = giveTrackNumber(trackNumber, registeredBackRec, refTimepoint);
+
+		//outputRegisteredImx(registeredBackRec, folder, orif);
+
+		outputRegisteredImx(sortedRegisteredBackRec, folder, orif);
+		
+		ouputInfo2("Done.");
+	}
+	void ouputInfo2(String info){
+		if ( ta2 != null)
+			ta2.append(info);
+		else
+			System.out.println(info);		
+	}
+	// a vector between selected pair.  
+	static double[] calculateRefAxis(double[] ref1, double[] ref2){
+		double[] axis = new double[3];
+		for(int j=0; j<3; j++){
+			axis[j] = (ref1[j]-ref2[j])/Math.sqrt((ref1[0]-ref2[0])*(ref1[0]-ref2[0])+(ref1[1]-ref2[1])*(ref1[1]-ref2[1])+(ref1[2]-ref2[2])*(ref1[2]-ref2[2]));
+		}
+		return axis;		
+	}	
 
 //	private static double[][] loadRefPos(String[] rec, int nTime) {
 //		double[][] refPos = new double[nTime][3];
@@ -374,5 +487,73 @@ public class ImxRegister extends WindowAdapter implements ActionListener{
 //		t = Integer.parseInt(nStr);
 //		return t;
 //	}
+
+	//loads the position file generated by registering. 
+	private static double[][] loadPos(String[] rec, int nTime) {
+		int i;
+		double[][] pos = new double[nTime][3];
+
+		for(i=0;i<nTime;i++){
+			pos[i][0] = Double.parseDouble(rec[3*i]);
+			pos[i][1] = Double.parseDouble(rec[3*i+1]);
+			pos[i][2] = Double.parseDouble(rec[3*i+2]);
+		}
+
+		return pos;
+	}
+	
+	private static String[] splitImxToString(String s) {
+		//System.out.println(s);
+		String[] strrec = s.split(" ");
+
+		return strrec;
+
+
+	}
+
+  //returns Imx file as a string. 
+	private static String loadImx(String filename) {
+		String s = null;
+		try
+		{
+			File f = new File(filename);
+			byte[] b = new byte[(int) f.length()];
+			FileInputStream fi = new FileInputStream(f);
+			fi.read(b);
+			s = new String(b);
+			fi.close();
+		}
+		catch(Exception e)
+		{
+			return null;
+
+		}
+		if ( s	==	null ){
+			return null;
+		}
+
+		return s;
+
+
+	}
+	// add centroid of that time point - the centroid of the first point.  
+	private static double[][] registerBackPos(double[][] allSpotPos,
+			double[][] cenPos) {
+		int i,j;
+		double[][] registeredBackPos = new double[allSpotPos.length][5];
+
+		for(i=0;i<allSpotPos.length;i++){
+			int t = (int)allSpotPos[i][3];
+			for(j=0;j<3;j++){
+				registeredBackPos[i][j] = allSpotPos[i][j] + cenPos[t][j] - cenPos[0][j];
+
+			}
+			for(j=3;j<5;j++){
+				registeredBackPos[i][j] = allSpotPos[i][j];
+			}
+		}
+
+		return registeredBackPos;
+	}	
 
 }
