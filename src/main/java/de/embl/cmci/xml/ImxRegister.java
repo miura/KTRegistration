@@ -28,56 +28,57 @@ public class ImxRegister extends WindowAdapter implements ActionListener{
 	
 	public static void main(String args[]) {
 		ImxRegister win = new ImxRegister();
+		win.imxRegisterGUI();
 	}
 	
-	public ImxRegister() {
-    frm.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+	public void imxRegisterGUI() {
+		frm.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frm.setSize(200 , 600);
 		//frm.setLayout(new GridLayout(6, 1));
 		frm.setLayout(new BoxLayout(frm.getContentPane(), BoxLayout.Y_AXIS));
-    
-    //first step, registration of the original
-    JPanel panelstep1 = new JPanel();
-    panelstep1.setLayout(new BoxLayout(panelstep1, BoxLayout.Y_AXIS));
-    panelstep1.setBorder(new EtchedBorder(EtchedBorder.LOWERED));
 
-    Label lb1 = new Label();
+		//first step, registration of the original
+		JPanel panelstep1 = new JPanel();
+		panelstep1.setLayout(new BoxLayout(panelstep1, BoxLayout.Y_AXIS));
+		panelstep1.setBorder(new EtchedBorder(EtchedBorder.LOWERED));
+
+		Label lb1 = new Label();
 		lb1.setText("Step1: Registration");
 		//frm.add(lb1);
 		panelstep1.add(lb1);
-    //1
+		//1
 		loadDataImxButton = new Button("Load Original Imx");
 		//frm.add("North", loadDataImxButton);
 		//frm.add(loadDataImxButton);
 		panelstep1.add(loadDataImxButton);
 		loadDataImxButton.addActionListener(this);
-    frm.add(panelstep1);    
-    //2
+		frm.add(panelstep1);    
+		//2
 		//ta = (TextArea)frm.add("Center", new TextArea());
 		ta = (TextArea)frm.add(new TextArea());
 		ta.setSize(200 , 550);
 
-    // second step, originally in the Register back
-    //
-    JPanel panelstep2 = new JPanel();
-    panelstep2.setLayout(new BoxLayout(panelstep2, BoxLayout.Y_AXIS));
-    panelstep2.setBorder(new EtchedBorder(EtchedBorder.LOWERED));
-    
-    frm.add(new JSeparator(SwingConstants.HORIZONTAL));
-    Label lb2 = new Label();
+		// second step, originally in the Register back
+		//
+		JPanel panelstep2 = new JPanel();
+		panelstep2.setLayout(new BoxLayout(panelstep2, BoxLayout.Y_AXIS));
+		panelstep2.setBorder(new EtchedBorder(EtchedBorder.LOWERED));
+
+		frm.add(new JSeparator(SwingConstants.HORIZONTAL));
+		Label lb2 = new Label();
 		lb2.setText("Step2: Inverse Registration");
 		panelstep2.add(lb2);
 
-    Label lb = new Label();
+		Label lb = new Label();
 		lb.setText("Representative interKT axis");
 		panelstep2.add(lb);
-    Panel p1 = new Panel();
-    p1.setLayout(new BoxLayout(p1, BoxLayout.X_AXIS));
+		Panel p1 = new Panel();
+		p1.setLayout(new BoxLayout(p1, BoxLayout.X_AXIS));
 		// 4
 		JLabel lb4 = new JLabel("Time:", JLabel.CENTER);
-    lb4.setVerticalAlignment(JLabel.CENTER);
+		lb4.setVerticalAlignment(JLabel.CENTER);
 		//frm.add(lb1);
-    p1.add(lb4);
+		p1.add(lb4);
 		// 5
 		ch1 = new Choice();
 		for(int i=0; i<31; i++){
@@ -85,17 +86,17 @@ public class ImxRegister extends WindowAdapter implements ActionListener{
 		}
 		//frm.add(ch1);
 		p1.add(ch1);
-    panelstep2.add(p1);
-    //6
+		panelstep2.add(p1);
+		//6
 		loadRegisterBack = new Button("Load Registered & \n annotated Imx file");
 		panelstep2.add(loadRegisterBack);
 		loadRegisterBack.addActionListener(this);
 
-    //7
-    ta2 = new TextArea();
+		//7
+		ta2 = new TextArea();
 		panelstep2.add("Center", ta2);
 		ta2.setSize(200 , 550);
-    frm.add(panelstep2);
+		frm.add(panelstep2);
 
 		frm.setVisible(true);
 		frm.addWindowListener(this);
@@ -111,19 +112,25 @@ public class ImxRegister extends WindowAdapter implements ActionListener{
 		}
 
 	}
-	
 	public void registerMain(){
 		FileDialog fd = new FileDialog(frm , "Select the imx File" , FileDialog.LOAD);
-		fd.setVisible(true);
-
-		ta.setText(fd.getDirectory() + fd.getFile() + "\n");
-
+		fd.setVisible(true);		
 		String folder = fd.getDirectory();
 		String orif = fd.getFile();
-
+		registerMain(folder, orif);
+	}
+	
+	public void registerMain(String folder, String orif){
+		
+		String fullpath = folder + orif;
+		if (ta != null)
+			ta.setText(fullpath);
+		else
+			System.out.println(fullpath);
+		
 		String imx = loadImx(folder+orif);
 		ImxParser ip = new ImxParser();
-		ip.loadImaxInfo(fd.getDirectory() + fd.getFile());
+		ip.loadImaxInfo(fullpath);
 		
 		//int nTime = 31;
 		int nTime = ip.frames;
@@ -131,33 +138,55 @@ public class ImxRegister extends WindowAdapter implements ActionListener{
 		String[] rec = splitImxToString(imx);
 
 		// never used?
-		double refPos[][] = loadRefPos(rec, nTime);
+		// out, on 20130613 double refPos[][] = loadRefPos(rec, nTime);
 		
+		// ------ spots <spot>
 		//double spotsPos[][] = loadSpotsPos(rec, nTime);
 		double spotsPos[][] = ip.convertSpotPos();
+		
+		String spotsinfo = "";
 		for (int i = 0; i < spotsPos.length; i++){
 			for(int j=0;j<4;j++){
-				ta.append(Double.toString(spotsPos[i][j]) + " ");
+				spotsinfo.concat(Double.toString(spotsPos[i][j]) + " ");
 			}
-			ta.append("\n");
+			spotsinfo.concat("\n");
 		}
+		if ( ta != null)
+			ta.append(spotsinfo);
+		else
+			System.out.println(spotsinfo);
+		
+		//------ centroid --------
 		double cenPos[][] = calcCenPos(spotsPos, nTime);
-		ta.append("Spots Centroids\n");
+		String centroidinfo = "Spots Centroids\n";	
 		for(int i=0;i<cenPos.length;i++){
 			for(int j=0;j<3;j++){
-				ta.append(Double.toString(cenPos[i][j]) + " ");
+				centroidinfo.concat(Double.toString(cenPos[i][j]) + " ");
 			}
-			ta.append("\n");
+			centroidinfo.concat("\n");
 		}
-	//	cenPos = refPos;
+		if ( ta != null)
+			ta.append(centroidinfo);
+		else
+			System.out.println(centroidinfo);
 
-		double allSpotPos[][] = loadAllSpotPos(rec, nTime);
-		double registeredPos[][] = registerPos(allSpotPos, cenPos);
-		String[] registeredRec = replaceIntoRegistered(rec, registeredPos);
+		//	cenPos = refPos;
+
+//		double allSpotPos[][] = loadAllSpotPos(rec, nTime);
+//		double registeredPos[][] = registerPos(allSpotPos, cenPos);
+		double registeredPos[][] = registerPos(spotsPos, cenPos);
+		
+//		String[] registeredRec = replaceIntoRegistered(rec, registeredPos);
+		ip.setSpotListReg(registeredPos);
 		outputCenPos(cenPos, folder, orif);
-		outputRegisteredImx(registeredRec, folder, orif);
-
-		ta.append("Done.");	
+//		outputRegisteredImx(registeredRec, folder, orif);
+		String newfilepath = folder + "registered-"+ orif;
+		ip.writeUpdatedImx(newfilepath);
+		
+		if ( ta != null)
+			ta.append("Done.");
+		else
+			System.out.println("Done.");
 	}
 
 	public void windowClosing(WindowEvent e) {
