@@ -56,83 +56,109 @@ public class ImxRegisterBack extends WindowAdapter implements ActionListener{
 	
 	public void actionPerformed(ActionEvent e) {
 		if (e.getSource() == loadRegisterBack){
-			registerBackMain();
+			int reftime = 1+(Integer.parseInt(ch1.getSelectedItem()));
+			registerBackMain(reftime);
 		}
 
 	}
 
-  public void registerBackMain(TextArea ta, Choice ch1){
-      this.ta = ta;
-      this.ch1 = ch1;
-      registerBackMain();
-  }
-	public void registerBackMain(){
+	public void registerBackMain(TextArea ta, Choice ch1){
+		this.ta = ta;
+		this.ch1 = ch1;
+		int reftime = 1+(Integer.parseInt(ch1.getSelectedItem()));
+		registerBackMain(reftime);
+	}
+	
+	//uses file dialog
+	public void registerBackMain(int reftime){
 		FileDialog fd = new FileDialog(frm , "Select the imx File" , FileDialog.LOAD);
 		fd.setVisible(true);
-		
-		//prints out the selected directory. 
-		ta.setText(fd.getDirectory() + fd.getFile() + "\n");
 
 		String folder = fd.getDirectory();
 		String orif = fd.getFile();
+		registerBackMain(folder, orif, reftime);
+	}
 	
+	public void registerBackMain(String folder, String orif, int reftime){
+
+		//prints out the selected directory.
+		if (ta != null)
+			ta.setText(folder + orif + "\n");
+		else
+			System.out.println(folder + orif);
+
 		//retrieve user-selected timepoint. 
-		int reftime = 1+(Integer.parseInt(ch1.getSelectedItem()));
-		String refTimepoint = Integer.toString(reftime) ;
 		
+		String refTimepoint = Integer.toString(reftime) ;
+
 		ImxParser ip = new ImxParser();
 		ip.loadImaxInfo(folder + orif);
 		//int nTime = 31;
 		int nTime = ip.frames;
-		ta.append("Time Points:"+Integer.toString(nTime));
-		
+		if (ta != null)
+			ta.append("Time Points:"+Integer.toString(nTime));
+		else
+			System.out.println("Time Points:"+Integer.toString(nTime));
+
 		ip.loadImaxTracks(folder + orif, reftime);
-		
-    //this file name seems to be pretty static. 
-    //the file containing centroid positions. 
+
+		//this file name seems to be pretty static. 
+		//the file containing centroid positions. 
 		String cenPosF = "cenPos-data.imx.csv";
-		
-    // this loads the centroid position file. 
+
+		// this loads the centroid position file. 
 		String cenPosStr = loadImx(folder + cenPosF);
-		
+
 		//splits Imx content by spaces. 
 		String[] cenPosRec = splitImxToString(cenPosStr);
-		
-	  //loads the position file	
+
+		//loads the position file	
 		double cenPos[][] = loadPos(cenPosRec, nTime);
 
 		// this probably should be fixed?
-    // loading registered, tracked then reference annotated file. 
+		// loading registered, tracked then reference annotated file. 
 		String imx = loadImx(folder + orif);		
 		String[] rec = splitImxToString(imx);		
-    // collect all spot positions in 2D array. 
+		// collect all spot positions in 2D array. 
 		double allSpotPos[][] = loadAllSpotPos(rec, nTime);
 		for (int i = 0; i < allSpotPos.length; i++)
 			System.out.println(allSpotPos[i][0]);
 
+		//this restores what it should be the original positions of all the spots. 
 		double registerBackPos[][] = registerBackPos(allSpotPos, cenPos);
 
+		// prepare string array that corresponds to the Imx content. 
 		String[] registeredBackRec = replaceIntoRegistered(rec, registerBackPos);
 
+		// returns spots in tracks at reference timepoint
 		double[][] spotPosAtFirst = loadSpotPosAtFrist(allSpotPos, refTimepoint);
 
 		//double[] axis = getReferenceAxis(rec, refTimepoint);
+		// a vector between selected pair (annotated).
 		double[] axis = calculateRefAxis(ip.ref1, ip.ref2);
-		
+
+		// find a partner with the minimum cross product
+		//	rename tracks according to pairing. 
 		int[] trackNumber = getTrackNumber(spotPosAtFirst, axis);
+
 
 		String[] sortedRegisteredBackRec = giveTrackNumber(trackNumber, registeredBackRec, refTimepoint);
 
 		//outputRegisteredImx(registeredBackRec, folder, orif);
 
 		outputRegisteredImx(sortedRegisteredBackRec, folder, orif);
-
-		ta.append("Done.");
+		if (ta != null)
+			ta.append("Done.");
+		else
+			System.out.println("Done.");
 	}
 
 	public void windowClosing(WindowEvent e) {
 		System.exit(0);
 	}
+	
+	// calculate the pairs. Partner is searched by the minimum of cross product length.
+	// returned value is an array with spot array length containing updated track id. 
 	private static int[] getTrackNumber(double[][] spot,
 			double[] axis) {
 
@@ -168,6 +194,7 @@ public class ImxRegisterBack extends WindowAdapter implements ActionListener{
 		int nUnpaired=0;
 		int nPaired=0;
 
+		// re-numbering in ordered way.
 		for(int i=0; i<spot.length; i++){
 			int p = partner[i];
 			if(p==99){
@@ -231,6 +258,7 @@ public class ImxRegisterBack extends WindowAdapter implements ActionListener{
 		return calculateRefAxis(ref1, ref2);
 	}
 	
+	// a vector between selected pair.  
 	static double[] calculateRefAxis(double[] ref1, double[] ref2){
 		double[] axis = new double[3];
 		for(int j=0; j<3; j++){
@@ -239,6 +267,7 @@ public class ImxRegisterBack extends WindowAdapter implements ActionListener{
 		return axis;		
 	}
 
+	// rename all track numbers. 
 	private static String[] giveTrackNumber(int[] trackNumber,
 			String[] rec, String refTimepoint) {
 		String[] gaveRec = rec;
@@ -270,7 +299,11 @@ public class ImxRegisterBack extends WindowAdapter implements ActionListener{
 	}
 
 
-
+	// among all the points, last half of the 
+	// array is searched for those which are at the reference time point
+	// reference time point corresponds to the frame where reference pair was annotated.
+	// compared to the original spot data file, there are two times more spot position
+	// element because of spots + spots within tracks. Spots from last half are those from tracks.  
 	private static double[][] loadSpotPosAtFrist(double[][] pos, String refTimepoint) {
 		int i,n;
 		n=0;
