@@ -342,18 +342,11 @@ public class ImxRegister extends WindowAdapter implements ActionListener{
 		} else {
 			cenPos = ip.centroids;
 		}
-		// ------ spots <spot>
-		double spotsPos[][] = ip.convertSpotPos();
-		//cancels back registration for <spots><spot>
-		double registerBackPos[][] = registerBackPos(spotsPos, cenPos);
 
-		//------ <bpTrack><spots>
-		double trackspotsPos[][] = ip.convertTrackSpotPos();
-		double registerBackTrackPos[][] = registerBackPos(trackspotsPos, cenPos);
 		// prepare string array that corresponds to the Imx content. 
 //		String[] registeredBackRec = replaceIntoRegistered(rec, registerBackPos);
 		
-		ip.loadImaxTracks(folder + orif, reftime);
+		//ip.loadImaxTracks(folder + orif, reftime);
 		
 		// this probably should be fixed?
 		// loading registered, tracked then reference annotated file. 
@@ -368,23 +361,45 @@ public class ImxRegister extends WindowAdapter implements ActionListener{
 
 
 		// returns spots in tracks at reference timepoint
-		double[][] spotPosAtFirst = loadSpotPosAtFrist(allSpotPos, refTimepoint);
+		//double[][] spotPosAtFirst = loadSpotPosAtFrist(allSpotPos, refTimepoint);
 
 		//double[] axis = getReferenceAxis(rec, refTimepoint);
 		// a vector between selected pair (annotated).
-		double[] axis = calculateRefAxis(ip.ref1, ip.ref2);
+		//double[] axis = calculateRefAxis(ip.ref1, ip.ref2);
 
 		// find a partner with the minimum cross product
 		//	rename tracks according to pairing. 
-		int[] trackNumber = getTrackNumber(spotPosAtFirst, axis);
+		//int[] trackNumber = getTrackNumber(spotPosAtFirst, axis);
 
 
-		String[] sortedRegisteredBackRec = giveTrackNumber(trackNumber, registeredBackRec, refTimepoint);
-
-		//outputRegisteredImx(registeredBackRec, folder, orif);
-
-		outputRegisteredImx(sortedRegisteredBackRec, folder, orif);
+		//String[] sortedRegisteredBackRec = giveTrackNumber(trackNumber, registeredBackRec, refTimepoint);
 		
+		ip.evaluateTrackPairs(refTimepoint);
+
+		// ------ spots <spot>
+		double spotsPos[][] = ip.convertSpotPos();
+		//cancels back registration for <spots><spot>
+		double registerBackPos[][] = registerBackPos(spotsPos, cenPos);
+		ip.setSpotListRegBack(registerBackPos);
+		
+		
+		//------ <bpTrack><spots>
+		double trackspotsPos[][] = ip.convertTrackSpotPos();
+		double registerBackTrackPos[][] = registerBackPos(trackspotsPos, cenPos);		
+		ip.setTrackSpotListRegBack(registerBackTrackPos);
+		
+		//outputRegisteredImx(registeredBackRec, folder, orif);
+		//outputRegisteredImx(sortedRegisteredBackRec, folder, orif);
+		// === writing update imx file ===
+		
+		String newfilepath = folder + "registeredback-"+ orif;
+		ip.writeUpdatedImx(newfilepath);
+		
+		// === keep things in the active memory ====
+		ip.rootpath = folder;
+		this.ip = ip;		
+		
+		ouputInfo("\nRegisterdBack File: " + newfilepath + "\n");		
 		ouputInfo2("Done.");
 	}
 	void ouputInfo2(String info){
@@ -400,7 +415,8 @@ public class ImxRegister extends WindowAdapter implements ActionListener{
 			axis[j] = (ref1[j]-ref2[j])/Math.sqrt((ref1[0]-ref2[0])*(ref1[0]-ref2[0])+(ref1[1]-ref2[1])*(ref1[1]-ref2[1])+(ref1[2]-ref2[2])*(ref1[2]-ref2[2]));
 		}
 		return axis;		
-	}	
+	}
+	
 
 //	private static double[][] loadRefPos(String[] rec, int nTime) {
 //		double[][] refPos = new double[nTime][3];

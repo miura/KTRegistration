@@ -29,6 +29,7 @@ import org.w3c.dom.Element;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Scanner;
 
 public class ImxParser {
 	ArrayList<Integer> timepoints;
@@ -49,29 +50,37 @@ public class ImxParser {
 	
 	/**
 	 * current <bpTrack>...<spot> Nodes
-	 * for the step 1, this will be empty. 
+	 * for the step 1, this will be empty and unused. 
 	 */
 	NodeList tspotlist;
+	
+	// following arraylists are for future implementation probably, 
+	// undoing things. 
 	/**
-	 *  the initial list of spots. (cloned) 
+	 *  the initial list of spots. (cloned, to keep data) 
 	 */
 	ArrayList<Node> spotlistOrg;
 	
 	/**
-	 *  the list of registered spots.  (cloned) 
+	 *  the list of registered spots.  (cloned, to keep data) 
 	 */	
 	ArrayList<Node> spotlistReg;
 	
 	/**
-	 * the list of registered back spots (not containing track-spots)  (cloned) 
+	 * the list of registered back spots (not containing track-spots)  (cloned, to keep data) 
 	 */
 	ArrayList<Node> spotlistRegBack;
 	
 	/**
-	 * the list of spots within tracks  (cloned) 
+	 * the list of spots within tracks, before register-back  (cloned, to keep data) 
 	 */
 	ArrayList<Node> spotlistTracks;
 
+	/**
+	 * the list of spots within tracks, after register-back  (cloned, to keep data) 
+	 */
+	ArrayList<Node> spotlistRegBackTracks;
+	
 	/**
 	 * the list of <bpTrack>s under <bpSurfaceComponents>
 	 */
@@ -91,6 +100,12 @@ public class ImxParser {
 	public String rootpath;
 	
 	public double[][] centroids;
+	
+	/**
+	 * name of the reference tracks for pair vector calculation. 
+	 */
+	private final String reference1string = "reference1";
+	private final String reference2string = "reference2";
 	
 	/** Document Loader
 	 *  see http://www.mkyong.com/java/how-to-read-xml-file-in-java-dom-parser/
@@ -114,36 +129,6 @@ public class ImxParser {
 	    }
 		return doc;
 	}
-//	// initial run to retireve spot information. 
-//	public void loadImaxInfoOld(String filepath){
-//		//ImxParser ip = new ImxParser();
-//		timepoints = new ArrayList<Integer>();
-//		positions = new ArrayList<double[]>();
-//		Document doc = this.parseImx(filepath);	
-//		NodeList nList = doc.getElementsByTagName("spot");
-//		for (int i = 0; i < nList.getLength(); i++) {
-//			Node nNode = nList.item(i);
-//			Element eElement = (Element) nNode;
-//			timepoints.add(Integer.parseInt(eElement.getAttribute("time")));
-//			String[] pos = eElement.getAttribute("position").split(" ");
-//			double[] elem = new double[4];
-//			for (int j = 0; j < 3; j++)
-//				elem[j] = Double.parseDouble(pos[j]);
-//			elem[3] = Double.parseDouble(eElement.getAttribute("time"));
-//			positions.add(elem);
-//		}
-//		Object maxT = Collections.max(timepoints);
-//		Object minT = Collections.min(timepoints);
-//		maxtime = (Integer) maxT;
-//		mintime = (Integer) minT;
-//		if (maxtime > mintime)
-//			frames =maxtime - mintime + 1;
-//		else
-//			System.out.println(" something wrong with imx file: timepoint min >= max");
-//		System.out.println("minT:" + Integer.toString(mintime));
-//		System.out.println("maxT:" + Integer.toString(maxtime));
-//		
-//	}
 	
 	public void loadImaxInfo(String filepath){
 		//ImxParser ip = new ImxParser();
@@ -164,7 +149,7 @@ public class ImxParser {
 		
 		Node tracksContainer = null;
 		NodeList trackspots = null;
-		NodeList tracklist = null;
+		NodeList trackList = null;
 		tracksContainer = getBPTracks(doc);
 		if (tracksContainer != null){
 			trackspots = getSpots( (Element) tracksContainer);
@@ -193,7 +178,7 @@ public class ImxParser {
 			this.tspotlist = trackspots;
 			this.spotlistReg = nodeList2ArrayList(spots); //to keep
 			this.spotlistTracks = nodeList2ArrayList(trackspots); // to keep
-			this.trackList = tracklist;
+			this.trackList = trackList;
 		}
 		
 		parseSpotsList(spots);
@@ -295,25 +280,41 @@ public class ImxParser {
 	 */
 	public boolean setSpotListReg(double[][] pos){
 		if (setSpotList(pos, this.spotlist)){
-			this.spotlistReg = nodeList2ArrayList(this.spotlist);
+			this.spotlistReg = nodeList2ArrayList(this.spotlist); // this is just to keep data. 
 			return true;
 		} else
 			return false;
 	}
 
 	/** 
-	 * for step2. registered back spot positions will be overwritten. 
+	 * for step2. 
+	 * registered back spot positions will be written over registered spot positions. 
 	 * This method updates only the spots under <spots><spot>
 	 * @param pos
 	 * @return
 	 */
 	public boolean setSpotListRegBack(double[][] pos){
 		if (setSpotList(pos, this.spotlist)){
-			this.spotlistRegBack = nodeList2ArrayList(this.spotlist);
+			this.spotlistRegBack = nodeList2ArrayList(this.spotlist); // this is just to keep data. 
 			return true;
 		} else
 			return false;
-	}	
+	}
+
+	/** 
+	 * for step2. 
+	 * registered back track spot positions will be written over registered track spot positions. 
+	 * This method updates only the spots under <boTrack> ... <spot>
+	 * @param pos
+	 * @return
+	 */
+	public boolean setTrackSpotListRegBack(double[][] pos){
+		if (setSpotList(pos, this.tspotlist)){
+			this.spotlistRegBackTracks = nodeList2ArrayList(this.tspotlist); // this is just to keep data. 
+			return true;
+		} else
+			return false;
+	}		
 	
 	
 	/**
@@ -323,7 +324,8 @@ public class ImxParser {
 	 * @param filepath
 	 */
 	public boolean loadImaxTracks(String filepath, int RefFNumber){
-		Document doc = this.parseImx(filepath);	
+		//Document doc = this.parseImx(filepath);	
+		Document doc = this.doc;
 		NodeList nodebpTrack = doc.getElementsByTagName("bpTrack");
 		NodeList nl2;
 		Element e, e2;
@@ -396,6 +398,184 @@ public class ImxParser {
 		Node content = n.getFirstChild();
 		return content.getNodeValue();
 	}
+	
+	public void evaluateTrackPairs(String reftime){
+		if (this.trackList == null){
+			System.out.println("no trackList! pair evaluation terminated.");
+			return;
+		}
+		// spot nodes at reference time point
+		ArrayList<Node> refspotnodes = new ArrayList<Node>();
+		ArrayList<double[]> refspotpositions = new ArrayList<double[]>();
+		
+		// array of track name attribute node
+		ArrayList<Node> trackNameNodes = new ArrayList<Node>();
+
+		int ntracks = this.trackList.getLength();
+		// go through <bpTrack>s
+		for (int i=0; i < ntracks; i++){
+			boolean isRef1 = false;
+			boolean isRef2 = false;
+			String trackid = "no name";
+			Element atrack = (Element) this.trackList.item(i);
+			//trackid = atrack.getFirstChild().getFirstChild().getNodeValue();
+			Node trackbps =  atrack.getElementsByTagName("bpSurfaceComponent").item(0);
+			Node trackbpsName = ((Element) trackbps).getElementsByTagName("name").item(0);
+			if (trackbpsName != null) {
+				trackid = trackbpsName.getTextContent();
+				trackNameNodes.add(trackbpsName);
+				if (trackid.equals(this.reference1string))
+					isRef1 = true;
+				if (trackid.equals(this.reference2string))
+					isRef2 = true;				
+			}	
+			NodeList spots = atrack.getElementsByTagName("spot");
+			int nspots = spots.getLength();
+			System.out.println("===" + trackid + "::   spots number:" + nspots);
+			
+			// extract spots at reference time points.
+			// if this track is a reference track, then stored as field value. 
+			for (int j = 0; j < nspots; j++){
+				Node aspot = spots.item(j);
+				String stime = aspot.getAttributes().getNamedItem("time").getNodeValue();
+				if (stime.equals(reftime)){
+					String spos = aspot.getAttributes().getNamedItem("position").getNodeValue();
+					double [] pos = new double[3];
+					Scanner in = new Scanner(spos);
+					for (int k=0; k<3; k++) pos[k] = in.nextDouble();
+					//System.out.println(stime);
+					//for (int k=0; k<3; k++) System.out.println(pos[k]);
+					refspotpositions.add(pos);
+					if (isRef1){
+						this.ref1 = pos;
+						this.ref1found = true;
+					}
+					if (isRef2){
+						this.ref2 = pos;
+						this.ref2found = true;
+					}
+				}
+			}
+		}
+		// === pairing core part ===
+		double[] axis = null;
+		int[] renamedTrackIDs = null;
+		if (this.ref1found && this.ref2found){
+			axis = calculateRefAxis(this.ref1, this.ref2);
+			renamedTrackIDs = getTrackNumber(refspotpositions, axis);
+			if (renamedTrackIDs.length != trackNameNodes.size()){
+				System.out.println("track array length dose not match with renamedID array lenght. Terminates");
+				return;
+			}
+			for (int i = 0; i< renamedTrackIDs.length; i++){
+				String newid = Integer.toString(renamedTrackIDs[i]);
+				String newname = "Track " + newid;
+				Node atrackName = trackNameNodes.get(i);
+				atrackName.setTextContent(newname);
+			}
+				
+		} else {
+			System.out.println("No Reference Tracks found! Pair vaector cannot be calculated.");
+			return;
+		}
+		// check
+		for (int i=0; i < ntracks; i++){
+			String trackid = "no name";
+			Element atrack = (Element) this.trackList.item(i);
+			//trackid = atrack.getFirstChild().getFirstChild().getNodeValue();
+			Node trackbps =  atrack.getElementsByTagName("bpSurfaceComponent").item(0);
+			Node trackbpsName = ((Element) trackbps).getElementsByTagName("name").item(0);
+			if (trackbpsName != null) {
+				trackid = trackbpsName.getTextContent();
+				System.out.println("New ID:" + trackid);
+			}	
+		}
+	}
+	
+	// compute a vector between selected reference pair.  
+	double[] calculateRefAxis(double[] ref1, double[] ref2){
+		double[] axis = new double[3];
+		for(int j=0; j<3; j++){
+			axis[j] = (ref1[j]-ref2[j])/
+					Math.sqrt(
+							(ref1[0]-ref2[0])*(ref1[0]-ref2[0]) + 
+							(ref1[1]-ref2[1])*(ref1[1]-ref2[1]) + 
+							(ref1[2]-ref2[2])*(ref1[2]-ref2[2])
+							);
+		}
+		return axis;		
+	}
+
+	/**
+	 *  calculate the pairs. Partner is searched by the minimum of cross product length.
+	 *  returned value is an array with spot array length containing updated track id. 
+	 * @author Tomo
+	 * @author Kota / modified for ImxParser 
+	 * @param spot
+	 * @param axis
+	 * @return
+	 */
+	// 
+	private int[] getTrackNumber(ArrayList<double[]> spot, double[] axis) {
+
+		int nSpots = spot.size();
+		int[] partner = new int[nSpots];
+		System.out.println("Spot Number in Reference Frame:" + nSpots);
+		for(int i = 0; i < nSpots; i++){
+			double minD = Double.MAX_VALUE;
+			partner[i] = 99;
+			//System.out.println("spot.length" + nSpots);
+			for(int j = 0; j < nSpots; j++){
+				if(i!=j){
+					double sx = spot.get(i)[0] - spot.get(j)[0];
+					double sy = spot.get(i)[1] - spot.get(j)[1];
+					double sz = spot.get(i)[2] - spot.get(j)[2];
+
+					double dx = sy*axis[2]-sz*axis[1];
+					double dy = sz*axis[0]-sx*axis[2];
+					double dz = sx*axis[1]-sy*axis[0];
+
+					double D = Math.sqrt(dx*dx+dy*dy+dz*dz);
+
+					if(D<minD){
+						minD = D;
+						partner[i] = j;
+					}
+				}
+			}
+
+		}
+
+		int trackNumber[] = new int[nSpots];
+
+		int nUnpaired=0;
+		int nPaired=0;
+
+		// re-numbering in ordered way.
+		for(int i = 0; i < nSpots; i++){
+			int p = partner[i];
+			if(p==99){
+				trackNumber[i] = 99;
+				nUnpaired++;
+			}else if(partner[p] == i){
+				if(i < p){
+					trackNumber[i] = nPaired;
+					trackNumber[p] = nPaired+1;
+					nPaired = nPaired+2;
+				}else{
+				}
+
+			}else{
+				trackNumber[i] = 99;
+				nUnpaired++;
+			}
+		}
+
+		if(nPaired+nUnpaired != nSpots){System.out.println("Error");}
+
+		return trackNumber;
+	}
+	
 	
 	//for testing
 	public static void main(String argv[]) {
