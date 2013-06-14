@@ -99,13 +99,12 @@ public class ImxParser {
 	public boolean isTrackedFile;
 	public String rootpath;
 	
-	public double[][] centroids;
-	
 	/**
 	 * name of the reference tracks for pair vector calculation. 
 	 */
 	private final String reference1string = "reference1";
 	private final String reference2string = "reference2";
+	public ArrayList<String> trackpairinfo;
 	
 	/** Document Loader
 	 *  see http://www.mkyong.com/java/how-to-read-xml-file-in-java-dom-parser/
@@ -131,6 +130,7 @@ public class ImxParser {
 	}
 	
 	public void loadImaxInfo(String filepath){
+		this.doc = null;
 		//ImxParser ip = new ImxParser();
 		timepoints = new ArrayList<Integer>();
 		//positions = new ArrayList<double[]>();
@@ -165,25 +165,26 @@ public class ImxParser {
 		if (hasSpotList && !hasTrackSpots)
 			isSpotfile = true;
 		else if (hasSpotList && hasTrackSpots)
-			isTrackedFile = true;
+			isSpotfile = false; // track containing file
 
 		//step1
 		if (isSpotfile){
 			this.spotlist = spots;
 			this.spotlistOrg = nodeList2ArrayList(spots); //to keep
+			parseSpotsList(spots);
+			this.trackList = null;
 			
 		//step2	
-		} else if (isTrackedFile) {
+		} else {
 			this.spotlist = spots;
 			this.tspotlist = trackspots;
 			this.spotlistReg = nodeList2ArrayList(spots); //to keep
 			this.spotlistTracks = nodeList2ArrayList(trackspots); // to keep
 			this.trackList = trackList;
-		}
-		
-		parseSpotsList(spots);
-		if (isTrackedFile)
+			parseSpotsList(spots);
 			parseTrackSpotsList(trackspots);
+		}
+			
 		
 	}
 	ArrayList<Node> nodeList2ArrayList(NodeList src){
@@ -317,56 +318,56 @@ public class ImxParser {
 	}		
 	
 	
-	/**
-	 * Collects track information for RegisterBack.
-	 * Input file should be the Imx file after registration, tracking and 
-	 * manual annotation in Imaris 
-	 * @param filepath
-	 */
-	public boolean loadImaxTracks(String filepath, int RefFNumber){
-		//Document doc = this.parseImx(filepath);	
-		Document doc = this.doc;
-		NodeList nodebpTrack = doc.getElementsByTagName("bpTrack");
-		NodeList nl2;
-		Element e, e2;
-		NamedNodeMap np = null;
-		String posstr;
-		String[] refstr;
-		String refFrameStr = Integer.toString(RefFNumber-1);
-		for (int i = 0; i < nodebpTrack.getLength(); i++){
-			e = (Element) nodebpTrack.item(i);
-			nl2 = e.getElementsByTagName("bpSurfaceComponent");
-			for (int j = 0; j < nl2.getLength(); j++){
-				e2 = (Element) nl2.item(j);
-				np = getReferenceAttributes("reference1", e2, refFrameStr);
-				if (np != null){
-					posstr = np.getNamedItem("position").getNodeValue();
-					System.out.println(posstr);
-					System.out.println(np.getNamedItem("time"));
-					ref1found = true;
-					refstr = posstr.split(" ");
-					for (int k = 0; k < 3; k++)
-						ref1[k] = Double.parseDouble(refstr[k]);
-
-				} 
-				np = getReferenceAttributes("reference2", e2, refFrameStr);
-				if (np != null){			
-					posstr = np.getNamedItem("position").getNodeValue();
-					System.out.println(posstr);
-					System.out.println(np.getNamedItem("time"));
-					ref2found = true;
-					refstr = posstr.split(" ");
-					for (int k = 0; k < 3; k++)
-						ref2[k] = Double.parseDouble(refstr[k]);					
-				}
-			}
-		}
-		if (ref1found && ref2found){
-			return true;
-		} else
-			return false;
-		
-	}
+//	/**
+//	 * Collects track information for RegisterBack.
+//	 * Input file should be the Imx file after registration, tracking and 
+//	 * manual annotation in Imaris 
+//	 * @param filepath
+//	 */
+//	public boolean loadImaxTracks(String filepath, int RefFNumber){
+//		//Document doc = this.parseImx(filepath);	
+//		Document doc = this.doc;
+//		NodeList nodebpTrack = doc.getElementsByTagName("bpTrack");
+//		NodeList nl2;
+//		Element e, e2;
+//		NamedNodeMap np = null;
+//		String posstr;
+//		String[] refstr;
+//		String refFrameStr = Integer.toString(RefFNumber-1);
+//		for (int i = 0; i < nodebpTrack.getLength(); i++){
+//			e = (Element) nodebpTrack.item(i);
+//			nl2 = e.getElementsByTagName("bpSurfaceComponent");
+//			for (int j = 0; j < nl2.getLength(); j++){
+//				e2 = (Element) nl2.item(j);
+//				np = getReferenceAttributes("reference1", e2, refFrameStr);
+//				if (np != null){
+//					posstr = np.getNamedItem("position").getNodeValue();
+//					System.out.println(posstr);
+//					System.out.println(np.getNamedItem("time"));
+//					ref1found = true;
+//					refstr = posstr.split(" ");
+//					for (int k = 0; k < 3; k++)
+//						ref1[k] = Double.parseDouble(refstr[k]);
+//
+//				} 
+//				np = getReferenceAttributes("reference2", e2, refFrameStr);
+//				if (np != null){			
+//					posstr = np.getNamedItem("position").getNodeValue();
+//					System.out.println(posstr);
+//					System.out.println(np.getNamedItem("time"));
+//					ref2found = true;
+//					refstr = posstr.split(" ");
+//					for (int k = 0; k < 3; k++)
+//						ref2[k] = Double.parseDouble(refstr[k]);					
+//				}
+//			}
+//		}
+//		if (ref1found && ref2found){
+//			return true;
+//		} else
+//			return false;
+//		
+//	}
 		
 	NamedNodeMap getReferenceAttributes(String tagname, Element e2, String refFrameStr){
 		NodeList nl3, nl4;
@@ -399,10 +400,9 @@ public class ImxParser {
 		return content.getNodeValue();
 	}
 	
-	public void evaluateTrackPairs(String reftime){
+	public String evaluateTrackPairs(String reftime){
 		if (this.trackList == null){
-			System.out.println("no trackList! pair evaluation terminated.");
-			return;
+			return "no trackList! pair evaluation terminated.";
 		}
 		// spot nodes at reference time point
 		ArrayList<Node> refspotnodes = new ArrayList<Node>();
@@ -410,6 +410,9 @@ public class ImxParser {
 		
 		// array of track name attribute node
 		ArrayList<Node> trackNameNodes = new ArrayList<Node>();
+
+		//for reporting
+		ArrayList<String> trackinfo = new ArrayList<String>();
 
 		int ntracks = this.trackList.getLength();
 		// go through <bpTrack>s
@@ -431,7 +434,7 @@ public class ImxParser {
 			}	
 			NodeList spots = atrack.getElementsByTagName("spot");
 			int nspots = spots.getLength();
-			System.out.println("===" + trackid + "::   spots number:" + nspots);
+			trackinfo.add("===" + trackid + "::   spots number:" + Integer.toString(nspots));
 			
 			// extract spots at reference time points.
 			// if this track is a reference track, then stored as field value. 
@@ -463,10 +466,8 @@ public class ImxParser {
 		if (this.ref1found && this.ref2found){
 			axis = calculateRefAxis(this.ref1, this.ref2);
 			renamedTrackIDs = getTrackNumber(refspotpositions, axis);
-			if (renamedTrackIDs.length != trackNameNodes.size()){
-				System.out.println("track array length dose not match with renamedID array lenght. Terminates");
-				return;
-			}
+			if (renamedTrackIDs.length != trackNameNodes.size())
+				return "track array length dose not match with renamedID array lenght. Terminates";
 			for (int i = 0; i< renamedTrackIDs.length; i++){
 				String newid = Integer.toString(renamedTrackIDs[i]);
 				String newname = "Track " + newid;
@@ -475,9 +476,9 @@ public class ImxParser {
 			}
 				
 		} else {
-			System.out.println("No Reference Tracks found! Pair vaector cannot be calculated.");
-			return;
+			return "No Reference Tracks found! Pair vaector cannot be calculated.";
 		}
+		//ArrayList<String> newtrackinfo = new ArrayList<String>();
 		// check
 		for (int i=0; i < ntracks; i++){
 			String trackid = "no name";
@@ -487,9 +488,12 @@ public class ImxParser {
 			Node trackbpsName = ((Element) trackbps).getElementsByTagName("name").item(0);
 			if (trackbpsName != null) {
 				trackid = trackbpsName.getTextContent();
-				System.out.println("New ID:" + trackid);
-			}	
-		}
+				//System.out.println("New ID:" + trackid);
+				trackinfo.set(i, trackinfo.get(i) + " >> new id: " + trackid);
+			}
+			this.trackpairinfo = trackinfo;
+		}		
+		return "done";
 	}
 	
 	// compute a vector between selected reference pair.  
@@ -592,7 +596,7 @@ public class ImxParser {
 		//ip.loadImaxInfo("/Volumes/D/Judith/spim2/data2.imx");
 		
 		//ip.loadImaxTracks("/Volumes/D/Judith/tracks.imx", 1);
-		ip.loadImaxTracks("/Volumes/D/Judith/tracks.imx", 1);
+		//ip.loadImaxTracks("/Volumes/D/Judith/tracks.imx", 1);
 	}	
 	public void testParsing(Document doc){
 		NodeList nList = doc.getElementsByTagName("spot");	

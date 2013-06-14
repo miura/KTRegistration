@@ -94,7 +94,7 @@ public class ImxRegisterBack extends WindowAdapter implements ActionListener{
 		int nTime = ip.frames;
 		ouputInfo("Time Points:"+Integer.toString(nTime) + "\n");
 
-		ip.loadImaxTracks(folder + orif, reftime);
+//		ip.loadImaxTracks(folder + orif, reftime);
 
 		//this file name seems to be pretty static. 
 		//the file containing centroid positions. 
