@@ -82,10 +82,7 @@ public class ImxRegisterBack extends WindowAdapter implements ActionListener{
 	public void registerBackMain(String folder, String orif, int reftime){
 
 		//prints out the selected directory.
-		if (ta != null)
-			ta.setText(folder + orif + "\n");
-		else
-			System.out.println(folder + orif);
+		ouputInfo(folder + orif + "\n");
 
 		//retrieve user-selected timepoint. 
 		
@@ -95,10 +92,7 @@ public class ImxRegisterBack extends WindowAdapter implements ActionListener{
 		ip.loadImaxInfo(folder + orif);
 		//int nTime = 31;
 		int nTime = ip.frames;
-		if (ta != null)
-			ta.append("Time Points:"+Integer.toString(nTime));
-		else
-			System.out.println("Time Points:"+Integer.toString(nTime));
+		ouputInfo("Time Points:"+Integer.toString(nTime) + "\n");
 
 		ip.loadImaxTracks(folder + orif, reftime);
 
@@ -147,10 +141,14 @@ public class ImxRegisterBack extends WindowAdapter implements ActionListener{
 		//outputRegisteredImx(registeredBackRec, folder, orif);
 
 		outputRegisteredImx(sortedRegisteredBackRec, folder, orif);
-		if (ta != null)
-			ta.append("Done.");
+		
+		ouputInfo("Done.");
+	}
+	void ouputInfo(String info){
+		if ( ta != null)
+			ta.append(info);
 		else
-			System.out.println("Done.");
+			System.out.println(info);		
 	}
 
 	public void windowClosing(WindowEvent e) {
