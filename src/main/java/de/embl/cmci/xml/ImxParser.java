@@ -29,6 +29,7 @@ import org.w3c.dom.Element;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Locale;
 import java.util.Scanner;
 
 public class ImxParser {
@@ -162,10 +163,16 @@ public class ImxParser {
 		} else {
 			System.out.println("No Tracks file");
 		}
-		if (hasSpotList && !hasTrackSpots)
+		if (hasSpotList && !hasTrackSpots){
 			isSpotfile = true;
-		else if (hasSpotList && hasTrackSpots)
+      isTrackedFile = false;
+    } else if (hasSpotList && hasTrackSpots){
 			isSpotfile = false; // track containing file
+      isTrackedFile = true;
+    } else {
+      isSpotfile = false;
+      isTrackedFile = false;
+    }
 
 		//step1
 		if (isSpotfile){
@@ -175,7 +182,7 @@ public class ImxParser {
 			this.trackList = null;
 			
 		//step2	
-		} else {
+		} else if (isTrackedFile){
 			this.spotlist = spots;
 			this.tspotlist = trackspots;
 			this.spotlistReg = nodeList2ArrayList(spots); //to keep
@@ -183,15 +190,34 @@ public class ImxParser {
 			this.trackList = trackList;
 			parseSpotsList(spots);
 			parseTrackSpotsList(trackspots);
+		} else {
+      System.out.println("This file is not appropriate .imx file.");
 		}
-			
 		
 	}
+  /**
+   * Converts NodeList to ArrayList<Node>
+   * mainly to be used for keeping processing steps. 
+   */
 	ArrayList<Node> nodeList2ArrayList(NodeList src){
 		ArrayList<Node> al = new ArrayList<Node>();
 		for (int i = 0; i < src.getLength(); i ++)
 			al.add(src.item(i).cloneNode(false)); 
 		return al;
+	}
+	ArrayList<double[]> spotNodeList2ArrayList(NodeList spots){
+		ArrayList<double[]> positions = new ArrayList<double[]>();
+		for (int i = 0; i < spots.getLength(); i++) {
+			Node nNode = spots.item(i);
+			Element eElement = (Element) nNode;
+			String[] pos = eElement.getAttribute("position").split(" ");
+			double[] elem = new double[5];
+			for (int j = 0; j < 3; j++)
+				elem[j] = Double.parseDouble(pos[j]);
+			elem[3] = Double.parseDouble(eElement.getAttribute("time"));
+			positions.add(elem);
+		}
+		return positions;
 	}
 	/**
 	 * parse time points and get min and max of time points. 
@@ -212,21 +238,6 @@ public class ImxParser {
 			System.out.println(" something wrong with imx file: timepoint min >= max");
 		System.out.println("minT:" + Integer.toString(mintime));
 		System.out.println("maxT:" + Integer.toString(maxtime));		
-	}
-	
-	ArrayList<double[]> spotNodeList2ArrayList(NodeList spots){
-		ArrayList<double[]> positions = new ArrayList<double[]>();
-		for (int i = 0; i < spots.getLength(); i++) {
-			Node nNode = spots.item(i);
-			Element eElement = (Element) nNode;
-			String[] pos = eElement.getAttribute("position").split(" ");
-			double[] elem = new double[5];
-			for (int j = 0; j < 3; j++)
-				elem[j] = Double.parseDouble(pos[j]);
-			elem[3] = Double.parseDouble(eElement.getAttribute("time"));
-			positions.add(elem);
-		}
-		return positions;
 	}
 	
 	void parseTrackSpotsList(NodeList trackspots){
@@ -265,7 +276,7 @@ public class ImxParser {
 		}
 		String placeholder = "%-10.8f %-10.8f %-10.8f";
 		for (int i = 0; i < pos.length; i++){
-			String posstring = String.format(placeholder, pos[i][0], pos[i][1], pos[i][2]);
+			String posstring = String.format(Locale.US, placeholder, pos[i][0], pos[i][1], pos[i][2]);
 			Node spot = spotlist.item(i);
 			NamedNodeMap attrs = spot.getAttributes();
 			Node attpos = attrs.getNamedItem("position");
@@ -369,36 +380,36 @@ public class ImxParser {
 //		
 //	}
 		
-	NamedNodeMap getReferenceAttributes(String tagname, Element e2, String refFrameStr){
-		NodeList nl3, nl4;
-		Element e3, e4;
-		NamedNodeMap np = null;
-		NamedNodeMap retnp = null;
-		String thisname = getElementContent(e2, "name");
-		if (thisname.equals(tagname)){
-			System.out.println(thisname);
-			nl3 = e2.getElementsByTagName("bpSurfaceComponentSpot");
-			System.out.println("total Spots Number:" + Integer.toString(nl3.getLength()));
-			for (int k = 0; k < nl3.getLength(); k++){
-				e3 = (Element) nl3.item(k);
-				nl4 = e3.getElementsByTagName("spot");
-				Node n = nl4.item(0);
-				np = n.getAttributes();
-				if (np.getNamedItem("time").getNodeValue().equals(refFrameStr)){
-					retnp = np;
-				}
-			}
-		}
-		return retnp;
-	}
+	//NamedNodeMap getReferenceAttributes(String tagname, Element e2, String refFrameStr){
+		//NodeList nl3, nl4;
+		//Element e3, e4;
+		//NamedNodeMap np = null;
+		//NamedNodeMap retnp = null;
+		//String thisname = getElementContent(e2, "name");
+		//if (thisname.equals(tagname)){
+			//System.out.println(thisname);
+			//nl3 = e2.getElementsByTagName("bpSurfaceComponentSpot");
+			//System.out.println("total Spots Number:" + Integer.toString(nl3.getLength()));
+			//for (int k = 0; k < nl3.getLength(); k++){
+				//e3 = (Element) nl3.item(k);
+				//nl4 = e3.getElementsByTagName("spot");
+				//Node n = nl4.item(0);
+				//np = n.getAttributes();
+				//if (np.getNamedItem("time").getNodeValue().equals(refFrameStr)){
+					//retnp = np;
+				//}
+			//}
+		//}
+		//return retnp;
+	//}
 	
 	
-	static String getElementContent(Element e, String TagName) {
-		NodeList nl = e.getElementsByTagName(TagName);
-		Node n = nl.item(0);
-		Node content = n.getFirstChild();
-		return content.getNodeValue();
-	}
+	//static String getElementContent(Element e, String TagName) {
+		//NodeList nl = e.getElementsByTagName(TagName);
+		//Node n = nl.item(0);
+		//Node content = n.getFirstChild();
+		//return content.getNodeValue();
+	//}
 	
 	public String evaluateTrackPairs(String reftime){
 		if (this.trackList == null){
@@ -445,6 +456,8 @@ public class ImxParser {
 					String spos = aspot.getAttributes().getNamedItem("position").getNodeValue();
 					double [] pos = new double[3];
 					Scanner in = new Scanner(spos);
+					in = in.useDelimiter(" ");
+					in = in.useLocale(Locale.US); // continental decimal separator "," avoided. 
 					for (int k=0; k<3; k++) pos[k] = in.nextDouble();
 					//System.out.println(stime);
 					//for (int k=0; k<3; k++) System.out.println(pos[k]);
