@@ -210,10 +210,15 @@ public class ImxParser {
 		for (int i = 0; i < spots.getLength(); i++) {
 			Node nNode = spots.item(i);
 			Element eElement = (Element) nNode;
-			String[] pos = eElement.getAttribute("position").split(" ");
+			//String[] pos = eElement.getAttribute("position").split(" ");
 			double[] elem = new double[5];
-			for (int j = 0; j < 3; j++)
-				elem[j] = Double.parseDouble(pos[j]);
+			//for (int j = 0; j < 3; j++)
+			//	elem[j] = Double.parseDouble(pos[j]);
+			String pos = eElement.getAttributes().getNamedItem("position").getNodeValue();
+			Scanner in = new Scanner(pos);
+			in = in.useDelimiter(" ");
+			in = in.useLocale(Locale.US); // continental decimal separator "," 
+			for (int k=0; k<3; k++) elem[k] = in.nextDouble();
 			elem[3] = Double.parseDouble(eElement.getAttribute("time"));
 			positions.add(elem);
 		}
@@ -258,7 +263,7 @@ public class ImxParser {
 		// but for here, a dummy (will be 0 for all)
 		double[][] pos = new double[this.bpTrackPositions.size()][5];
 		for (int i = 0; i < pos.length; i++)
-			pos[i] = this.positions.get(i);
+			pos[i] = this.bpTrackPositions.get(i);
 		return pos;
 	}
 	
