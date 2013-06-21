@@ -107,6 +107,27 @@ public class ImxParser {
 	private final String reference2string = "reference2";
 	public ArrayList<String> trackpairinfo;
 	
+	/**
+	 * version number in string. "5" or "7" currently
+	 */
+	private String imarisver;
+	/**
+	 * <bpSpots> in ver 5
+	 */
+	private String tag_bpSpots = "bpSpots";
+	/**
+	 * <spots> in ver5
+	 */
+	private String tag_spots = "spots";
+	/**
+	 * <spot> in ver 5
+	 */
+	private String tag_spot = "spot";
+	/**
+	 * "time" in ver 5
+	 */
+	private String att_timeindex = "time";
+	
 	/** Document Loader
 	 *  see http://www.mkyong.com/java/how-to-read-xml-file-in-java-dom-parser/
 	 * @param filepath
@@ -138,7 +159,7 @@ public class ImxParser {
 		Document docorg = this.parseImx(filepath);
 		Document doc = (Document) docorg.cloneNode(true);
 		this.doc = doc;
-		
+		setImarisVersionDependencies(doc);
 		boolean hasSpotList = false;
 		boolean hasTrackSpots = false;
 		
@@ -219,11 +240,32 @@ public class ImxParser {
 			in = in.useDelimiter(" ");
 			in = in.useLocale(Locale.US); // continental decimal separator "," 
 			for (int k=0; k<3; k++) elem[k] = in.nextDouble();
-			elem[3] = Double.parseDouble(eElement.getAttribute("time"));
+			elem[3] = Double.parseDouble(eElement.getAttribute(this.att_timeindex));
 			positions.add(elem);
 		}
 		return positions;
 	}
+	
+	void setImarisVersionDependencies(Document doc){
+		Element topelement  = (Element) doc.getElementsByTagName("bpImarisApplication").item(0);
+		String versionstr = topelement.getAttribute("Version");
+		String vernumstr = versionstr.split(" ")[2];
+		if (vernumstr.startsWith("5")){
+			this.imarisver = "5";
+			this.tag_bpSpots = "bpSpots";
+			this.tag_spots = "spots";
+			this.tag_spot = "spot";
+			this.att_timeindex = "time";
+		} else {
+			this.imarisver = "7";
+			this.tag_bpSpots = "bpPointsViewer";
+			this.tag_spots = "bpPoints";
+			this.tag_spot = "point";
+			this.att_timeindex = "timeIndex";
+		}
+		System.out.println("Imaris Version" + this.imarisver);
+	}
+	
 	/**
 	 * parse time points and get min and max of time points. 
 	 * store positions as a String array in the order of the appearance of the <spot>
@@ -448,7 +490,7 @@ public class ImxParser {
 				if (trackid.equals(this.reference2string))
 					isRef2 = true;				
 			}	
-			NodeList spots = atrack.getElementsByTagName("spot");
+			NodeList spots = atrack.getElementsByTagName(this.tag_spot);
 			int nspots = spots.getLength();
 			trackinfo.add("===" + trackid + "::   spots number:" + Integer.toString(nspots));
 			
@@ -456,7 +498,7 @@ public class ImxParser {
 			// if this track is a reference track, then stored as field value. 
 			for (int j = 0; j < nspots; j++){
 				Node aspot = spots.item(j);
-				String stime = aspot.getAttributes().getNamedItem("time").getNodeValue();
+				String stime = aspot.getAttributes().getNamedItem(this.att_timeindex).getNodeValue();
 				if (stime.equals(reftime)){
 					String spos = aspot.getAttributes().getNamedItem("position").getNodeValue();
 					double [] pos = new double[3];
@@ -617,7 +659,7 @@ public class ImxParser {
 		//ip.loadImaxTracks("/Volumes/D/Judith/tracks.imx", 1);
 	}	
 	public void testParsing(Document doc){
-		NodeList nList = doc.getElementsByTagName("spot");	
+		NodeList nList = doc.getElementsByTagName(this.tag_spot);	
 		System.out.println("----------------------------");
 		for (int temp = 0; temp < nList.getLength(); temp++) {
 
@@ -629,7 +671,7 @@ public class ImxParser {
 
 				Element eElement = (Element) nNode;
 
-				System.out.println("Time: " + eElement.getAttribute("time"));
+				System.out.println("Time: " + eElement.getAttribute(this.att_timeindex));
 				System.out.println("Radius: " + eElement.getAttribute("radius"));					
 				//System.out.println("First Name : " + eElement.getElementsByTagName("firstname").item(0).getTextContent());
 			}
@@ -658,7 +700,7 @@ public class ImxParser {
 	}
 	//returns list of <spot> nodes
 	NodeList getSpots(Document doc){
-		NodeList spotsnode  = doc.getElementsByTagName("spots");
+		NodeList spotsnode  = doc.getElementsByTagName(this.tag_spots);
 		NodeList spots = null;
 		if ((spotsnode.getLength() < 1) || (spotsnode == null) ){
 			System.out.println(" no <spots> found>");
@@ -673,7 +715,7 @@ public class ImxParser {
 
 	//returns a NodeList of <spot> nodes
 	NodeList getSpots(Element e){
-		NodeList spots  = e.getElementsByTagName("spot");
+		NodeList spots  = e.getElementsByTagName(this.tag_spot);
 		if ((spots.getLength() < 1) || (spots == null) ){
 			System.out.println(" no <spot> found>");
 		} else {
