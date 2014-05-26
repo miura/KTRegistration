@@ -8,3 +8,4 @@
 tags
 .pydevproject
 src/test/*
+target/*
